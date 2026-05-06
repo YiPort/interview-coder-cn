@@ -4,7 +4,9 @@ import { useAppStore } from '@/lib/store/app'
 import { useTranscriptionStore } from '@/lib/store/transcription'
 import { useSolutionStore } from '@/lib/store/solution'
 import { useVoiceStore } from '@/lib/store/voice'
+import { useRecorderStore } from '@/lib/store/recorder'
 import { startAudioCapture, stopAudioCapture } from '@/lib/audio-capture'
+import { startDualCapture, stopDualCapture } from '@/lib/recorder-capture'
 import { speak as ttsSpeak, stop as ttsStop } from '@/lib/tts'
 
 import { AppHeader } from './AppHeader'
@@ -168,6 +170,73 @@ export default function CoderPage() {
     }
   }, [setErrorMessage, setVoiceMode])
 
+  // Interview recording start (Ctrl+1) — dual-channel recording for review
+  useEffect(() => {
+    const handleStartRecording = async () => {
+      const { isRecording: recording } = useRecorderStore.getState()
+      if (recording) return // Already recording
+      const { dashscopeApiKey: apiKey, recordEnabled: enabled, systemAudioDeviceId, micDeviceId } =
+        useSettingsStore.getState()
+      if (!enabled) {
+        setErrorMessage('请先在设置中开启"启用面试录音"')
+        return
+      }
+      if (!apiKey) {
+        setErrorMessage('请先在设置中配置百炼平台 API Key')
+        return
+      }
+      try {
+        await startDualCapture(systemAudioDeviceId || undefined, micDeviceId || undefined)
+        await window.api.startRecording(apiKey, systemAudioDeviceId, micDeviceId)
+        useRecorderStore.getState().setIsRecording(true)
+      } catch (err) {
+        console.error('Failed to start recording:', err)
+        stopDualCapture()
+        setErrorMessage('启动录音失败，请检查音频设备配置')
+      }
+    }
+
+    window.api.onStartRecordingCmd(handleStartRecording)
+    return () => {
+      window.api.removeStartRecordingCmdListener()
+    }
+  }, [setErrorMessage])
+
+  // Interview recording stop (Ctrl+2)
+  useEffect(() => {
+    const handleStopRecording = () => {
+      const { isRecording: recording } = useRecorderStore.getState()
+      if (!recording) return
+      stopDualCapture()
+      window.api.stopRecording()
+      useRecorderStore.getState().reset()
+    }
+
+    window.api.onStopRecordingCmd(handleStopRecording)
+    return () => {
+      window.api.removeStopRecordingCmdListener()
+    }
+  }, [])
+
+  // Recording sentence counter
+  useEffect(() => {
+    window.api.onRecordingSentence((channel) => {
+      if (channel === 'system') {
+        useRecorderStore.getState().incrementSystemCount()
+      } else {
+        useRecorderStore.getState().incrementMicCount()
+      }
+    })
+    window.api.onRecordingError((message) => {
+      setErrorMessage(message)
+    })
+
+    return () => {
+      window.api.removeRecordingSentenceListener()
+      window.api.removeRecordingErrorListener()
+    }
+  }, [setErrorMessage])
+
   // Toggle TTS on/off from shortcut
   useEffect(() => {
     const handleToggleTTS = () => {
@@ -193,6 +262,10 @@ export default function CoderPage() {
       if (useVoiceStore.getState().isVoiceMode) {
         stopAudioCapture()
         window.api.stopTranscription()
+      }
+      if (useRecorderStore.getState().isRecording) {
+        stopDualCapture()
+        window.api.stopRecording()
       }
       ttsStop()
     }

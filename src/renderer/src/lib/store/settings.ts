@@ -23,6 +23,9 @@ interface Settings {
   systemAudioDeviceId: string
   micDeviceId: string
   ttsVoice: string
+  recordDir: string
+  recordEnabled: boolean
+  recordSaveScreenshots: boolean
 }
 
 interface SettingsStore extends Settings {
@@ -50,7 +53,10 @@ const defaultSettings: Settings = {
   audioSource: 'system' as const,
   systemAudioDeviceId: '',
   micDeviceId: '',
-  ttsVoice: ''
+  ttsVoice: '',
+  recordDir: '',
+  recordEnabled: false,
+  recordSaveScreenshots: true
 }
 
 export const useSettingsStore = create<SettingsStore>()(

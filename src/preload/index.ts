@@ -229,6 +229,52 @@ const api = {
     ipcRenderer.removeAllListeners('tts-speak-text')
   },
 
+  // Recording (interview review)
+  startRecording: (apiKey: string, systemDeviceId: string, micDeviceId: string) =>
+    ipcRenderer.invoke('start-recording', apiKey, systemDeviceId, micDeviceId),
+  stopRecording: () => ipcRenderer.invoke('stop-recording'),
+  sendRecorderAudioChunk: (chunk: ArrayBuffer, channel: 'system' | 'mic') =>
+    ipcRenderer.send(`recorder-${channel}-audio-chunk`, chunk),
+
+  onStartRecordingCmd: (callback: () => void) => {
+    ipcRenderer.on('start-recording-cmd', callback)
+  },
+  removeStartRecordingCmdListener: () => {
+    ipcRenderer.removeAllListeners('start-recording-cmd')
+  },
+  onStopRecordingCmd: (callback: () => void) => {
+    ipcRenderer.on('stop-recording-cmd', callback)
+  },
+  removeStopRecordingCmdListener: () => {
+    ipcRenderer.removeAllListeners('stop-recording-cmd')
+  },
+  onRecordingStarted: (callback: () => void) => {
+    ipcRenderer.on('recording-started', callback)
+  },
+  removeRecordingStartedListener: () => {
+    ipcRenderer.removeAllListeners('recording-started')
+  },
+  onRecordingStopped: (callback: () => void) => {
+    ipcRenderer.on('recording-stopped', callback)
+  },
+  removeRecordingStoppedListener: () => {
+    ipcRenderer.removeAllListeners('recording-stopped')
+  },
+  onRecordingSentence: (callback: (channel: 'system' | 'mic') => void) => {
+    ipcRenderer.on('recording-sentence', (_event, channel) => callback(channel))
+  },
+  removeRecordingSentenceListener: () => {
+    ipcRenderer.removeAllListeners('recording-sentence')
+  },
+  onRecordingError: (callback: (message: string) => void) => {
+    ipcRenderer.on('recording-error', (_event, message) => callback(message))
+  },
+  removeRecordingErrorListener: () => {
+    ipcRenderer.removeAllListeners('recording-error')
+  },
+
+  selectRecordDir: () => ipcRenderer.invoke('selectRecordDir') as Promise<string | null>,
+
 }
 
 export type MainAPI = typeof api

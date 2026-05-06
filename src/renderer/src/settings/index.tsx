@@ -11,13 +11,18 @@ import {
   Keyboard,
   FolderOpen,
   Mic,
-  Volume2
+  Volume2,
+  Radio
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { useSettingsStore } from '@/lib/store/settings'
+import { useShortcutsStore } from '@/lib/store/shortcuts'
+import { useRecorderStore } from '@/lib/store/recorder'
+import { startDualCapture, stopDualCapture } from '@/lib/recorder-capture'
+import ShortcutRenderer from '@/components/ShortcutRenderer'
 import { SelectModel } from './SelectModel'
 import { SelectLanguage } from './SelectLanguage'
 import { CustomShortcuts, ResetDefaultShortcuts } from './CustomShortcuts'
@@ -38,8 +43,15 @@ export default function SettingsPage() {
     audioSource,
     systemAudioDeviceId,
     micDeviceId,
+    recordDir,
+    recordEnabled,
+    recordSaveScreenshots,
     updateSetting
   } = useSettingsStore()
+  const { shortcuts } = useShortcutsStore()
+  const { isRecording, systemSentenceCount, micSentenceCount } = useRecorderStore()
+  const startRecKey = shortcuts.startRecording?.key || 'Ctrl+1'
+  const stopRecKey = shortcuts.stopRecording?.key || 'Ctrl+2'
   const [showApiKey, setShowApiKey] = useState(false)
   const [showDashscopeApiKey, setShowDashscopeApiKey] = useState(false)
   const [enableCustomPrompt, setEnableCustomPrompt] = useState(customPrompt.trim().length > 0)
@@ -73,6 +85,24 @@ export default function SettingsPage() {
       navigator.mediaDevices.removeEventListener('devicechange', enumerateDevices)
     }
   }, [enumerateDevices])
+
+  // Recording event listeners for real-time feedback from the test button
+  useEffect(() => {
+    window.api.onRecordingSentence((channel) => {
+      if (channel === 'system') {
+        useRecorderStore.getState().incrementSystemCount()
+      } else {
+        useRecorderStore.getState().incrementMicCount()
+      }
+    })
+    window.api.onRecordingStopped(() => {
+      useRecorderStore.getState().reset()
+    })
+    return () => {
+      window.api.removeRecordingSentenceListener()
+      window.api.removeRecordingStoppedListener()
+    }
+  }, [])
 
   const handleCustomPromptToggle = (checked: boolean) => {
     setEnableCustomPrompt(checked)
@@ -486,6 +516,130 @@ export default function SettingsPage() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Recording Settings */}
+        <div className="bg-gray-300/80 rounded-lg p-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center">
+            <Radio className="h-5 w-5 mr-2" />
+            录音设置
+            <span className="text-sm font-light ml-2 mt-0.5">
+              同时记录面试官和你的语音，方便面试复盘
+            </span>
+            {isRecording && (
+              <span className="flex items-center ml-2 mt-0.5">
+                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse mr-1" />
+                <span className="text-xs text-red-600">
+                  录音中 面试官:{systemSentenceCount} 我:{micSentenceCount}
+                </span>
+              </span>
+            )}
+          </h2>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">
+                启用面试录音
+                <span className="ml-2 text-xs font-light">
+                  开启后可在主界面按
+                  <ShortcutRenderer
+                    shortcut={startRecKey}
+                    className="inline-block scale-75 text-xs border border-current bg-transparent py-0 px-1 mx-0.5 align-middle"
+                  />
+                  开始录音，按
+                  <ShortcutRenderer
+                    shortcut={stopRecKey}
+                    className="inline-block scale-75 text-xs border border-current bg-transparent py-0 px-1 mx-0.5 align-middle"
+                  />
+                  停止录音
+                </span>
+              </label>
+              <Switch
+                className="scale-y-90"
+                checked={recordEnabled}
+                onCheckedChange={(checked) => updateSetting('recordEnabled', checked)}
+              />
+            </div>
+
+            <div
+              className={`space-y-4 ${!recordEnabled ? 'opacity-40 pointer-events-none' : ''}`}
+            >
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">
+                  在录音中保存截图
+                  <span className="ml-2 text-xs font-light">
+                    截图时将图片嵌入录音文档
+                  </span>
+                </label>
+                <Switch
+                  className="scale-y-90"
+                  checked={recordSaveScreenshots}
+                  onCheckedChange={(checked) => updateSetting('recordSaveScreenshots', checked)}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">
+                  录音保存目录
+                  <span className="ml-2 text-xs font-light">
+                    录音文档和截图将保存在此目录下
+                  </span>
+                </label>
+                <button
+                  className="text-xs text-gray-600 max-w-48 truncate hover:text-gray-900 cursor-pointer transition-colors"
+                  title="点击选择录音保存目录"
+                  onClick={async () => {
+                    const dir = await window.api.selectRecordDir()
+                    if (dir) updateSetting('recordDir', dir)
+                  }}
+                >
+                  {recordDir || '默认: 文档/InterviewCoder/Records'}
+                </button>
+              </div>
+
+              {/* Recording test button */}
+              <div className="flex items-center justify-between pt-2 border-t border-gray-400/30">
+                <label className="text-sm font-medium">
+                  功能检测
+                  <span className="ml-2 text-xs font-light">
+                    点击按钮测试录音功能是否正常，查看实时转录效果
+                  </span>
+                </label>
+                <Button
+                  variant={isRecording ? 'destructive' : 'default'}
+                  size="sm"
+                  className="h-8 px-4"
+                  onClick={async () => {
+                    if (isRecording) {
+                      stopDualCapture()
+                      await window.api.stopRecording()
+                      useRecorderStore.getState().reset()
+                    } else {
+                      if (!dashscopeApiKey) return
+                      try {
+                        await startDualCapture(
+                          systemAudioDeviceId || undefined,
+                          micDeviceId || undefined
+                        )
+                        await window.api.startRecording(
+                          dashscopeApiKey,
+                          systemAudioDeviceId,
+                          micDeviceId
+                        )
+                        useRecorderStore.getState().setIsRecording(true)
+                      } catch (err) {
+                        console.error('Failed to start recording test:', err)
+                        stopDualCapture()
+                      }
+                    }
+                  }}
+                  disabled={!dashscopeApiKey || !recordEnabled}
+                >
+                  {isRecording ? '停止录音' : '测试录音'}
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 

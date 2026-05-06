@@ -16,7 +16,7 @@ const ShortcutsContext = createContext<{
 
 export function CustomShortcuts() {
   const { shortcuts, updateShortcut } = useShortcutsStore()
-  const { dashscopeApiKey } = useSettingsStore()
+  const { dashscopeApiKey, recordEnabled } = useSettingsStore()
   const [recordingAction, setRecordingAction] = useState<string | null>(null)
 
   const onShortcutChange = useCallback(
@@ -31,16 +31,27 @@ export function CustomShortcuts() {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!recordingAction) return
-
       e.preventDefault()
+      e.stopPropagation()
+    },
+    [recordingAction]
+  )
+
+  const handleKeyUp = useCallback(
+    (e: KeyboardEvent) => {
+      if (!recordingAction) return
+
+      // Escape cancels recording
+      if (e.code === 'Escape') {
+        setRecordingAction(null)
+        return
+      }
 
       if (isModifierKey(e.code)) return
+
       const accelerator = getShortcutAccelerator(e)
-      // User press escape to cancel recording.
-      if (e.code === 'Escape' && !accelerator) {
-        setRecordingAction(null)
-      }
       if (!accelerator) return
+
       onShortcutChange(recordingAction, accelerator)
       setRecordingAction(null)
     },
@@ -49,10 +60,12 @@ export function CustomShortcuts() {
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [handleKeyDown])
+  }, [handleKeyDown, handleKeyUp])
 
   return (
     <ShortcutsContext.Provider value={{ recordingAction, setRecordingAction }}>
@@ -114,6 +127,24 @@ export function CustomShortcuts() {
             description="开启/关闭AI答案语音朗读"
             shortcut="toggleTTS"
           />
+          <Shortcut
+            label="开始录音"
+            description="开始双通道录音，同时录制面试官和自己"
+            shortcut="startRecording"
+            disabled={!dashscopeApiKey || !recordEnabled}
+            disabledReason={
+              !recordEnabled
+                ? '（需先在录音设置中开启"启用面试录音"）'
+                : !dashscopeApiKey
+                  ? '（需配置百炼平台 API Key）'
+                  : undefined
+            }
+          />
+          <Shortcut
+            label="停止录音"
+            description="停止录音并保存记录文档"
+            shortcut="stopRecording"
+          />
         </div>
 
         {/* Navigation */}
@@ -140,12 +171,14 @@ function Shortcut({
   label,
   description,
   shortcut: shortcutAction,
-  disabled
+  disabled,
+  disabledReason
 }: {
   label: string
   description?: string
   shortcut: string
   disabled?: boolean
+  disabledReason?: string
 }) {
   const { shortcuts } = useShortcutsStore()
   const { recordingAction, setRecordingAction } = useContext(ShortcutsContext)
@@ -159,6 +192,9 @@ function Shortcut({
       <div className="flex gap-2 items-center">
         <label className="text-sm font-medium">{label}</label>
         {description && <p className="text-xs font-light">{description}</p>}
+        {disabledReason && (
+          <p className="text-xs text-amber-600 font-light">{disabledReason}</p>
+        )}
       </div>
       <span
         className="cursor-pointer"

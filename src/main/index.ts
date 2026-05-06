@@ -31,6 +31,7 @@ import { electronApp, optimizer } from '@electron-toolkit/utils'
 import './shortcuts'
 import './transcription'
 import './tts'
+import './recorder'
 import { createWindow } from './main-window'
 import { initAutoUpdater } from './auto-updater'
 

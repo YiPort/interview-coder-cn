@@ -4,6 +4,7 @@ import { useSolutionStore } from '@/lib/store/solution'
 import { useShortcutsStore } from '@/lib/store/shortcuts'
 import { useAppStore } from '@/lib/store/app'
 import { useVoiceStore } from '@/lib/store/voice'
+import { useRecorderStore } from '@/lib/store/recorder'
 import ShortcutRenderer from '@/components/ShortcutRenderer'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTitle, DialogContent, DialogFooter } from '@/components/ui/dialog'
@@ -19,6 +20,7 @@ export function AppStatusBar() {
   const { ignoreMouse } = useAppStore()
   const { shortcuts } = useShortcutsStore()
   const { isVoiceMode, isSpeaking } = useVoiceStore()
+  const { isRecording, systemSentenceCount, micSentenceCount } = useRecorderStore()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [questionInput, setQuestionInput] = useState('')
 
@@ -117,6 +119,15 @@ export function AppStatusBar() {
         ) : null}
       </div>
       <div className="flex items-center space-x-4 select-none">
+        {/* Recording Indicator */}
+        {isRecording && (
+          <div className="flex items-center">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse mr-1.5" />
+            <span className="text-xs">
+              录音中 面试官:{systemSentenceCount} 我:{micSentenceCount}
+            </span>
+          </div>
+        )}
         {/* TTS Status Indicator */}
         {isSpeaking && (
           <div className="flex items-center">

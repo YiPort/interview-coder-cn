@@ -19,6 +19,17 @@ ipcMain.handle('selectScreenshotDir', async () => {
   return result.filePaths[0]
 })
 
+ipcMain.handle('selectRecordDir', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openDirectory', 'createDirectory'],
+    title: '选择录音保存目录'
+  })
+  if (result.canceled || result.filePaths.length === 0) {
+    return null
+  }
+  return result.filePaths[0]
+})
+
 export const settings = {
   apiBaseURL: process.env.API_BASE_URL || '',
   apiKey: process.env.API_KEY || '',
@@ -32,7 +43,10 @@ export const settings = {
   ttsEnabled: true,
   audioSource: 'system' as 'system' | 'microphone',
   systemAudioDeviceId: '',
-  micDeviceId: ''
+  micDeviceId: '',
+  recordDir: '',
+  recordEnabled: false,
+  recordSaveScreenshots: true
 }
 
 export type AppSettings = typeof settings

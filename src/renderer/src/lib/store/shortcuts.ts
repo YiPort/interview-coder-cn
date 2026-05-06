@@ -95,12 +95,22 @@ const defaultShortcuts: Record<string, Omit<Shortcut, 'defaultKey'>> = {
   },
   voiceQuery: {
     action: 'voiceQuery',
-    key: `${platformAlt}+Z`,
+    key: 'CommandOrControl+Q',
     category: 'Voice'
   },
   toggleTTS: {
     action: 'toggleTTS',
     key: `${platformAlt}+B`,
+    category: 'Voice'
+  },
+  startRecording: {
+    action: 'startRecording',
+    key: 'CommandOrControl+1',
+    category: 'Voice'
+  },
+  stopRecording: {
+    action: 'stopRecording',
+    key: 'CommandOrControl+2',
     category: 'Voice'
   }
 }
@@ -138,7 +148,7 @@ export const useShortcutsStore = create<ShortcutsStore>()(
     }),
     {
       name: 'interview-coder-shortcuts',
-      version: 5,
+      version: 6,
       migrate: (state: unknown, version: number) => {
         if (!isPersistedShortcutsState(state) || !state.shortcuts) return state as ShortcutsStore
         // Merge in any new default shortcuts that are missing
@@ -148,11 +158,18 @@ export const useShortcutsStore = create<ShortcutsStore>()(
             { ...shortcut, defaultKey: shortcut.key }
           ])
         )
+        // Remove obsolete shortcut keys that no longer exist in defaults
+        const cleaned: Record<string, Shortcut> = {}
+        for (const [action, shortcut] of Object.entries(state.shortcuts)) {
+          if (defaults[action]) {
+            cleaned[action] = shortcut as Shortcut
+          }
+        }
         const merged = {
           ...state,
           shortcuts: {
             ...defaults,
-            ...state.shortcuts
+            ...cleaned
           }
         } as ShortcutsStore
 

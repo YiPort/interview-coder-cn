@@ -8,6 +8,7 @@ import { getSolutionStream, getFollowUpStream, getGeneralStream, getVoiceStream 
 import { state } from './state'
 import { settings } from './settings'
 import { getTranscriptionText, clearTranscriptionText } from './transcription'
+import { addRecordingScreenshot } from './recorder'
 
 /**
  * Extract meaningful error message from API errors
@@ -254,6 +255,7 @@ const callbacks: Record<string, () => void> = {
     const screenshotData = await takeScreenshot()
     if (screenshotData && mainWindow && !mainWindow.isDestroyed()) {
       saveScreenshotToDisk(screenshotData)
+      addRecordingScreenshot(screenshotData)
       const transcriptionText = getTranscriptionText()
       if (transcriptionText) {
         clearTranscriptionText()
@@ -383,6 +385,7 @@ const callbacks: Record<string, () => void> = {
     const screenshotData = await takeScreenshot()
     if (screenshotData && mainWindow && !mainWindow.isDestroyed()) {
       saveScreenshotToDisk(screenshotData)
+      addRecordingScreenshot(screenshotData)
       const transcriptionText = getTranscriptionText()
       if (transcriptionText) {
         clearTranscriptionText()
@@ -577,6 +580,18 @@ const callbacks: Record<string, () => void> = {
     const mainWindow = global.mainWindow
     if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage) return
     mainWindow.webContents.send('toggle-tts')
+  },
+
+  startRecording: () => {
+    const mainWindow = global.mainWindow
+    if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage) return
+    mainWindow.webContents.send('start-recording-cmd')
+  },
+
+  stopRecording: () => {
+    const mainWindow = global.mainWindow
+    if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage) return
+    mainWindow.webContents.send('stop-recording-cmd')
   }
 }
 
