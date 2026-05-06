@@ -147,6 +147,36 @@ export async function buildScreenshotMessages(
   }
 }
 
+// ─── Mode-specific prompts ──────────────────────────────────────────
+
+const MODE_PROMPTS: Record<string, string> = {
+  'core-code':
+    '你是一个编程面试辅助工具。只输出题目的核心解题代码，遵循以下规则：\n' +
+    '- 不要输出任何思考过程、推理步骤、分析说明。直接输出最终代码\n' +
+    '- 代码使用 Markdown 代码块包裹，在开头三反引号后必须标注语言（如 ```python、```java、```cpp）\n' +
+    '- 代码格式整洁，正确缩进，每行只写一条语句，不要多条语句挤在一行\n' +
+    '- 使用题目对应的函数签名，不要额外添加 main 函数或测试用例\n' +
+    '- 使用有意义的变量名，适当添加空行分隔逻辑块',
+  'acm':
+    '你是一个编程竞赛辅助工具。以 ACM 模式输出完整代码，遵循以下规则：\n' +
+    '- 不要输出任何思考过程、推理步骤、分析说明。直接输出最终代码\n' +
+    '- 代码使用 Markdown 代码块包裹，在开头三反引号后必须标注语言（如 ```python、```java、```cpp）\n' +
+    '- 包含所有必要的 import/头文件\n' +
+    '- 包含完整的输入读取和输出打印逻辑\n' +
+    '- 代码可以直接复制到在线评测系统运行\n' +
+    '- 代码格式整洁，正确缩进，每行只写一条语句'
+}
+
+function getSystemPrompt(): string {
+  // Custom prompt from settings takes full priority
+  if (settings.customPrompt) return settings.customPrompt
+  // Mode-specific prompt replaces the default PROMPT_SYSTEM for code modes
+  if (settings.responseMode === 'core-code' || settings.responseMode === 'acm') {
+    return MODE_PROMPTS[settings.responseMode] + `\n使用编程语言：${settings.codeLanguage} 解答。`
+  }
+  return PROMPT_SYSTEM + `\n使用编程语言：${settings.codeLanguage} 解答。`
+}
+
 // ─── Streaming functions ───────────────────────────────────────────
 
 export function getSolutionStream(messages: ModelMessage[], abortSignal?: AbortSignal) {
@@ -155,8 +185,7 @@ export function getSolutionStream(messages: ModelMessage[], abortSignal?: AbortS
 
   const { textStream } = streamText({
     model: openai.chat(model),
-    system:
-      settings.customPrompt || PROMPT_SYSTEM + `\n使用编程语言：${settings.codeLanguage} 解答。`,
+    system: getSystemPrompt(),
     messages,
     abortSignal,
     onError: (err) => {
@@ -184,8 +213,46 @@ export function getFollowUpStream(
 
   const { textStream } = streamText({
     model: openai.chat(model),
-    system:
-      settings.customPrompt || PROMPT_SYSTEM + `\n使用编程语言：${settings.codeLanguage} 解答。`,
+    system: getSystemPrompt(),
+    messages: updatedMessages,
+    abortSignal,
+    onError: (err) => {
+      throw err.error ?? err
+    }
+  })
+  return textStream
+}
+
+/**
+ * Get system prompt for alternative solution requests.
+ * Appends a strong nudge to provide a different approach.
+ */
+function getAlternativeSystemPrompt(): string {
+  const base = getSystemPrompt()
+  return (
+    base +
+    '\n\n⚠️ 重要：用户对之前的解法不满意。请给出一种与之前完全不同的解法（不同的算法、数据结构或思路），不要重复之前的方案。'
+  )
+}
+
+export function getAlternativeSolutionStream(
+  messages: ModelMessage[],
+  abortSignal?: AbortSignal
+) {
+  const { baseURL, apiKey, model } = getSolvingProvider()
+  const openai = createOpenAI({ baseURL, apiKey })
+
+  const updatedMessages: ModelMessage[] = [
+    ...messages,
+    {
+      role: 'user',
+      content: [{ type: 'text', text: '请给出另一种不同的解法。' }]
+    }
+  ]
+
+  const { textStream } = streamText({
+    model: openai.chat(model),
+    system: getAlternativeSystemPrompt(),
     messages: updatedMessages,
     abortSignal,
     onError: (err) => {
@@ -222,10 +289,7 @@ export function getGeneralStream(messages: ModelMessage[], abortSignal?: AbortSi
 
   const { textStream } = streamText({
     model: openai.chat(model),
-    system:
-      settings.customPrompt ||
-      PROMPT_SYSTEM +
-        `\n使用编程语言：${settings.codeLanguage} 解答。\n\n注意：如果有多张截图，请结合所有截图内容进行完整分析，不要遗漏任何部分。`,
+    system: getSystemPrompt(),
     messages,
     abortSignal,
     onError: (err) => {

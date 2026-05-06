@@ -30,6 +30,7 @@ interface Settings {
   visionApiBaseURL: string
   visionApiKey: string
   visionModel: string
+  responseMode: 'core-code' | 'acm' | 'custom'
 }
 
 interface SettingsStore extends Settings {
@@ -64,7 +65,8 @@ const defaultSettings: Settings = {
   useSeparateVisionModel: false,
   visionApiBaseURL: '',
   visionApiKey: '',
-  visionModel: ''
+  visionModel: '',
+  responseMode: 'core-code' as const
 }
 
 export const useSettingsStore = create<SettingsStore>()(

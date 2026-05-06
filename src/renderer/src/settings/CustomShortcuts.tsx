@@ -95,6 +95,11 @@ export function CustomShortcuts() {
             shortcut="appendScreenshot"
           />
           <Shortcut
+            label="另一种解法"
+            description="对当前答案不满意时请求不同的解法"
+            shortcut="alternativeSolution"
+          />
+          <Shortcut
             label="停止生成"
             description="打断当前正在生成的解题建议"
             shortcut="stopSolutionStream"

@@ -50,7 +50,8 @@ export const settings = {
   useSeparateVisionModel: false,
   visionApiBaseURL: '',
   visionApiKey: '',
-  visionModel: ''
+  visionModel: '',
+  responseMode: 'core-code' as 'core-code' | 'acm' | 'custom'
 }
 
 export type AppSettings = typeof settings

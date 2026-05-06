@@ -61,6 +61,11 @@ const defaultShortcuts: Record<string, Omit<Shortcut, 'defaultKey'>> = {
     key: `${platformAlt}+.`,
     category: 'Screenshot & AI'
   },
+  alternativeSolution: {
+    action: 'alternativeSolution',
+    key: 'CommandOrControl+/',
+    category: 'Screenshot & AI'
+  },
   toggleTranscription: {
     action: 'toggleTranscription',
     key: `${platformAlt}+T`,
@@ -148,7 +153,7 @@ export const useShortcutsStore = create<ShortcutsStore>()(
     }),
     {
       name: 'interview-coder-shortcuts',
-      version: 6,
+      version: 7,
       migrate: (state: unknown, version: number) => {
         if (!isPersistedShortcutsState(state) || !state.shortcuts) return state as ShortcutsStore
         // Merge in any new default shortcuts that are missing

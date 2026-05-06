@@ -50,6 +50,7 @@ export default function SettingsPage() {
     visionApiBaseURL,
     visionApiKey,
     visionModel,
+    responseMode,
     updateSetting
   } = useSettingsStore()
   const { shortcuts } = useShortcutsStore()
@@ -59,7 +60,6 @@ export default function SettingsPage() {
   const [showApiKey, setShowApiKey] = useState(false)
   const [showDashscopeApiKey, setShowDashscopeApiKey] = useState(false)
   const [showVisionApiKey, setShowVisionApiKey] = useState(false)
-  const [enableCustomPrompt, setEnableCustomPrompt] = useState(customPrompt.trim().length > 0)
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
 
   // API test state
@@ -147,14 +147,6 @@ export default function SettingsPage() {
       window.api.removeRecordingStoppedListener()
     }
   }, [])
-
-  const handleCustomPromptToggle = (checked: boolean) => {
-    setEnableCustomPrompt(checked)
-    if (!checked) {
-      // Clear the custom prompt when switch is turned off
-      updateSetting('customPrompt', '')
-    }
-  }
 
   return (
     <>
@@ -634,21 +626,90 @@ export default function SettingsPage() {
           </h2>
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">
-                自定义提示词
-                <span className="ml-2 text-xs font-light">
-                  通过配置自定义提示词，可将应用能力快速扩展到编程以外的其他场景，用户也可以通过微调提示词来优化效果
+            <div className="flex items-start justify-between">
+              <label className="text-sm font-medium pt-1">
+                回答模式
+                <span className="ml-2 text-xs font-light block mt-0.5">
+                  核心代码模式仅输出解题代码，紧凑在一页以内；
+                  <br />
+                  ACM模式输出可直接运行的完整代码；自定义模式可自由编写提示词
                 </span>
               </label>
-              <Switch
-                className="scale-y-90"
-                checked={enableCustomPrompt}
-                onCheckedChange={handleCustomPromptToggle}
-              />
+              <div className="w-60 space-y-2">
+                <div
+                  className={`border rounded-md p-3 cursor-pointer transition-colors ${
+                    responseMode === 'core-code'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 bg-white hover:border-gray-400'
+                  }`}
+                  onClick={() => updateSetting('responseMode', 'core-code')}
+                >
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="responseMode"
+                      value="core-code"
+                      checked={responseMode === 'core-code'}
+                      onChange={() => updateSetting('responseMode', 'core-code')}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm font-medium">核心代码模式</span>
+                  </label>
+                  <p className="text-xs text-gray-400 ml-5 mt-1">
+                    仅输出核心解题代码，紧凑在一页以内，无任何解释说明
+                  </p>
+                </div>
+                <div
+                  className={`border rounded-md p-3 cursor-pointer transition-colors ${
+                    responseMode === 'acm'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 bg-white hover:border-gray-400'
+                  }`}
+                  onClick={() => updateSetting('responseMode', 'acm')}
+                >
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="responseMode"
+                      value="acm"
+                      checked={responseMode === 'acm'}
+                      onChange={() => updateSetting('responseMode', 'acm')}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm font-medium">ACM 模式</span>
+                  </label>
+                  <p className="text-xs text-gray-400 ml-5 mt-1">
+                    包含完整输入输出代码，可直接复制到在线评测系统运行
+                  </p>
+                </div>
+                <div
+                  className={`border rounded-md p-3 cursor-pointer transition-colors ${
+                    responseMode === 'custom'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 bg-white hover:border-gray-400'
+                  }`}
+                  onClick={() => updateSetting('responseMode', 'custom')}
+                >
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="responseMode"
+                      value="custom"
+                      checked={responseMode === 'custom'}
+                      onChange={() => updateSetting('responseMode', 'custom')}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm font-medium">自定义提示词</span>
+                  </label>
+                  <p className="text-xs text-gray-400 ml-5 mt-1">
+                    自由编写提示词，适用于非编程类场景或微调回答风格
+                  </p>
+                </div>
+              </div>
             </div>
-            {enableCustomPrompt ? (
-              <div className="-mt-2">
+
+            {responseMode === 'custom' ? (
+              <div>
                 <Textarea
                   value={customPrompt}
                   onChange={(e) => updateSetting('customPrompt', e.target.value)}
@@ -658,12 +719,10 @@ export default function SettingsPage() {
                 />
               </div>
             ) : (
-              <div
-                className={`flex items-center justify-between ${enableCustomPrompt ? ' opacity-40 pointer-events-none' : ''}`}
-              >
+              <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">
                   编程语言
-                  <span className="ml-2 text-xs font-light">启用自定义提示词后，该选项失效</span>
+                  <span className="ml-2 text-xs font-light">选择代码输出的编程语言</span>
                 </label>
                 <SelectLanguage
                   value={codeLanguage}

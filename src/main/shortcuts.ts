@@ -4,7 +4,7 @@ import type { ModelMessage } from 'ai'
 import { applyContentProtection } from './main-window'
 import { takeScreenshot } from './take-screenshot'
 import { saveScreenshotToDisk } from './save-screenshot'
-import { getSolutionStream, getFollowUpStream, getGeneralStream, getVoiceStream, buildScreenshotMessages } from './ai'
+import { getSolutionStream, getFollowUpStream, getGeneralStream, getVoiceStream, getAlternativeSolutionStream, buildScreenshotMessages } from './ai'
 import { state } from './state'
 import { settings } from './settings'
 import { getTranscriptionText, clearTranscriptionText } from './transcription'
@@ -223,6 +223,152 @@ function abortCurrentStream(reason: AbortReason) {
   currentStreamContext.controller.abort()
 }
 
+/**
+ * Streaming filter that strips model thinking/reasoning blocks ( 思考... ).
+ * Uses regex for complete blocks; holds back only when a start tag is unclosed.
+ */
+function createThinkingFilter() {
+  let buffer = ''
+
+  return {
+    process(chunk: string): string {
+      buffer += chunk
+
+      // Strip all complete  think... response blocks
+      buffer = buffer.replace(/<think>[\s\S]*?<\/think>/g, '')
+
+      // Check for an unclosed  think tag (might be split across chunks)
+      const openIdx = buffer.indexOf('')
+      if (openIdx === -1) {
+        // No open think tag, safe to emit everything immediately
+        const result = buffer
+        buffer = ''
+        return result
+      }
+
+      // Unclosed  think tag — emit everything before it, hold the rest
+      const result = buffer.slice(0, openIdx)
+      buffer = buffer.slice(openIdx)
+      return result
+    },
+
+    flush(): string {
+      // Strip complete blocks one more time
+      buffer = buffer.replace(/<think>[\s\S]*?<\/think>/g, '')
+      // Strip any remaining unclosed think block
+      buffer = buffer.replace(/<think>[\s\S]*$/, '')
+      const result = buffer
+      buffer = ''
+      return result
+    }
+  }
+}
+
+/**
+ * Execute a follow-up question within the current conversation.
+ * Used by both the follow-up IPC handler and the alternative-solution shortcut.
+ */
+async function executeFollowUp(
+  question: string,
+  alternativeSolution = false
+): Promise<{ success: boolean; error?: string }> {
+  const mainWindow = global.mainWindow
+  if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage || !settings.apiKey) {
+    return { success: false, error: 'Invalid state' }
+  }
+  if (conversationMessages.length === 0) {
+    return { success: false, error: 'No active conversation' }
+  }
+
+  abortCurrentStream('new-request')
+  const streamContext: StreamContext = {
+    controller: new AbortController(),
+    reason: null
+  }
+  currentStreamContext = streamContext
+
+  mainWindow.webContents.send('solution-chunk', '\n\n---\n\n')
+  mainWindow.webContents.send('solution-chunk', `> **👤 你：** ${question}\n\n`)
+  mainWindow.webContents.send('solution-chunk', '**🤖 AI：**\n\n')
+
+  let endedNaturally = true
+  let streamStarted = false
+  let assistantResponse = ''
+  const thinkingFilter2 = createThinkingFilter()
+
+  try {
+    const followUpStream = alternativeSolution
+      ? getAlternativeSolutionStream(conversationMessages, streamContext.controller.signal)
+      : getFollowUpStream(conversationMessages, question, streamContext.controller.signal)
+    streamStarted = true
+
+    try {
+      for await (const chunk of followUpStream) {
+        if (streamContext.controller.signal.aborted) {
+          endedNaturally = false
+          break
+        }
+        const clean = thinkingFilter2.process(chunk)
+        assistantResponse += clean
+        if (clean) mainWindow.webContents.send('solution-chunk', clean)
+      }
+      const remaining = thinkingFilter2.flush()
+      if (remaining) {
+        assistantResponse += remaining
+        mainWindow.webContents.send('solution-chunk', remaining)
+      }
+    } catch (error) {
+      if (!streamContext.controller.signal.aborted) {
+        endedNaturally = false
+        console.error('Error streaming follow-up solution:', error)
+        mainWindow.webContents.send('solution-error', extractErrorMessage(error))
+      } else {
+        endedNaturally = false
+      }
+    }
+
+    if (streamContext.controller.signal.aborted) {
+      if (streamContext.reason === 'user') {
+        mainWindow.webContents.send('solution-stopped')
+      }
+    } else if (endedNaturally) {
+      conversationMessages.push({
+        role: 'user',
+        content: [{ type: 'text', text: question }]
+      })
+      if (assistantResponse) {
+        conversationMessages.push({
+          role: 'assistant',
+          content: assistantResponse
+        })
+      }
+      mainWindow.webContents.send('solution-complete')
+      if (assistantResponse) {
+        mainWindow.webContents.send('tts-speak-text', assistantResponse)
+      }
+    }
+  } catch (error) {
+    if (streamContext.controller.signal.aborted) {
+      if (streamContext.reason === 'user') {
+        mainWindow.webContents.send('solution-stopped')
+      }
+    } else {
+      endedNaturally = false
+      console.error('Error streaming follow-up solution:', error)
+      mainWindow.webContents.send('solution-error', extractErrorMessage(error))
+    }
+  } finally {
+    if (currentStreamContext === streamContext) {
+      currentStreamContext = null
+    }
+    if (!streamStarted && streamContext.reason === 'user') {
+      mainWindow.webContents.send('solution-stopped')
+    }
+  }
+
+  return { success: true }
+}
+
 const callbacks: Record<string, () => void> = {
   hideOrShowMainWindow: async () => {
     const mainWindow = global.mainWindow
@@ -304,6 +450,7 @@ const callbacks: Record<string, () => void> = {
       let endedNaturally = true
       let streamStarted = false
       let assistantResponse = ''
+      const thinkingFilter = createThinkingFilter()
       try {
         const solutionStream = getSolutionStream(
           conversationMessages,
@@ -316,8 +463,14 @@ const callbacks: Record<string, () => void> = {
               endedNaturally = false
               break
             }
-            assistantResponse += chunk
-            mainWindow.webContents.send('solution-chunk', chunk)
+            const clean = thinkingFilter.process(chunk)
+            assistantResponse += clean
+            if (clean) mainWindow.webContents.send('solution-chunk', clean)
+          }
+          const remaining = thinkingFilter.flush()
+          if (remaining) {
+            assistantResponse += remaining
+            mainWindow.webContents.send('solution-chunk', remaining)
           }
         } catch (error) {
           if (!streamContext.controller.signal.aborted) {
@@ -334,7 +487,6 @@ const callbacks: Record<string, () => void> = {
             mainWindow.webContents.send('solution-stopped')
           }
         } else if (endedNaturally) {
-          // Add assistant response to conversation history
           if (assistantResponse) {
             conversationMessages.push({
               role: 'assistant',
@@ -451,6 +603,7 @@ const callbacks: Record<string, () => void> = {
       let endedNaturally = true
       let streamStarted = false
       let assistantResponse = ''
+      const thinkingFilter1 = createThinkingFilter()
       try {
         const solutionStream = getGeneralStream(
           conversationMessages,
@@ -463,8 +616,14 @@ const callbacks: Record<string, () => void> = {
               endedNaturally = false
               break
             }
-            assistantResponse += chunk
-            mainWindow.webContents.send('solution-chunk', chunk)
+            const clean = thinkingFilter1.process(chunk)
+            assistantResponse += clean
+            if (clean) mainWindow.webContents.send('solution-chunk', clean)
+          }
+          const remaining = thinkingFilter1.flush()
+          if (remaining) {
+            assistantResponse += remaining
+            mainWindow.webContents.send('solution-chunk', remaining)
           }
         } catch (error) {
           if (!streamContext.controller.signal.aborted) {
@@ -520,6 +679,11 @@ const callbacks: Record<string, () => void> = {
   // Stop current AI solution stream
   stopSolutionStream: () => {
     abortCurrentStream('user')
+  },
+
+  // Request an alternative solution for the current problem
+  alternativeSolution: async () => {
+    await executeFollowUp('请给出另一种不同的解法。', true)
   },
 
   ignoreOrEnableMouse: () => {
@@ -690,108 +854,7 @@ ipcMain.handle('stopSolutionStream', () => {
 })
 
 ipcMain.handle('sendFollowUpQuestion', async (_event, question: string) => {
-  const mainWindow = global.mainWindow
-  if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage || !settings.apiKey) {
-    return { success: false, error: 'Invalid state' }
-  }
-
-  // Validate that there's an active conversation
-  if (conversationMessages.length === 0) {
-    return { success: false, error: 'No active conversation' }
-  }
-
-  abortCurrentStream('new-request')
-  const streamContext: StreamContext = {
-    controller: new AbortController(),
-    reason: null
-  }
-  currentStreamContext = streamContext
-
-  // Add a separator and show user question in chat format
-  mainWindow.webContents.send('solution-chunk', '\n\n---\n\n')
-  mainWindow.webContents.send(
-    'solution-chunk',
-    `> **👤 你：** ${question}\n\n`
-  )
-  mainWindow.webContents.send('solution-chunk', '**🤖 AI：**\n\n')
-
-  let endedNaturally = true
-  let streamStarted = false
-  let assistantResponse = ''
-
-  try {
-    const followUpStream = getFollowUpStream(
-      conversationMessages,
-      question,
-      streamContext.controller.signal
-    )
-    streamStarted = true
-
-    try {
-      for await (const chunk of followUpStream) {
-        if (streamContext.controller.signal.aborted) {
-          endedNaturally = false
-          break
-        }
-        assistantResponse += chunk
-        mainWindow.webContents.send('solution-chunk', chunk)
-      }
-    } catch (error) {
-      if (!streamContext.controller.signal.aborted) {
-        endedNaturally = false
-        console.error('Error streaming follow-up solution:', error)
-        mainWindow.webContents.send('solution-error', extractErrorMessage(error))
-      } else {
-        endedNaturally = false
-      }
-    }
-
-    if (streamContext.controller.signal.aborted) {
-      if (streamContext.reason === 'user') {
-        mainWindow.webContents.send('solution-stopped')
-      }
-    } else if (endedNaturally) {
-      // Update conversation history with user question and assistant response
-      conversationMessages.push({
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: question
-          }
-        ]
-      })
-      if (assistantResponse) {
-        conversationMessages.push({
-          role: 'assistant',
-          content: assistantResponse
-        })
-      }
-      mainWindow.webContents.send('solution-complete')
-            if (assistantResponse) {
-              mainWindow.webContents.send('tts-speak-text', assistantResponse)
-            }
-    }
-  } catch (error) {
-    if (streamContext.controller.signal.aborted) {
-      if (streamContext.reason === 'user') {
-        mainWindow.webContents.send('solution-stopped')
-      }
-    } else {
-      endedNaturally = false
-      console.error('Error streaming follow-up solution:', error)
-      mainWindow.webContents.send('solution-error', extractErrorMessage(error))
-    }
-  } finally {
-    if (currentStreamContext === streamContext) {
-      currentStreamContext = null
-    }
-    if (!streamStarted && streamContext.reason === 'user') {
-      mainWindow.webContents.send('solution-stopped')
-    }
-  }
-
-  return { success: true }
+  return executeFollowUp(question)
 })
 
 ipcMain.handle('send-voice-query', async (_event, text: string) => {
@@ -829,6 +892,7 @@ ipcMain.handle('send-voice-query', async (_event, text: string) => {
   let endedNaturally = true
   let streamStarted = false
   let assistantResponse = ''
+  const thinkingFilter3 = createThinkingFilter()
 
   try {
     const voiceStream = getVoiceStream(conversationMessages, streamContext.controller.signal)
@@ -840,8 +904,14 @@ ipcMain.handle('send-voice-query', async (_event, text: string) => {
           endedNaturally = false
           break
         }
-        assistantResponse += chunk
-        mainWindow.webContents.send('solution-chunk', chunk)
+        const clean = thinkingFilter3.process(chunk)
+        assistantResponse += clean
+        if (clean) mainWindow.webContents.send('solution-chunk', clean)
+      }
+      const remaining = thinkingFilter3.flush()
+      if (remaining) {
+        assistantResponse += remaining
+        mainWindow.webContents.send('solution-chunk', remaining)
       }
     } catch (error) {
       if (!streamContext.controller.signal.aborted) {
