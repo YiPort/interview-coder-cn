@@ -46,6 +46,10 @@ export default function SettingsPage() {
     recordDir,
     recordEnabled,
     recordSaveScreenshots,
+    useSeparateVisionModel,
+    visionApiBaseURL,
+    visionApiKey,
+    visionModel,
     updateSetting
   } = useSettingsStore()
   const { shortcuts } = useShortcutsStore()
@@ -54,8 +58,48 @@ export default function SettingsPage() {
   const stopRecKey = shortcuts.stopRecording?.key || 'Ctrl+2'
   const [showApiKey, setShowApiKey] = useState(false)
   const [showDashscopeApiKey, setShowDashscopeApiKey] = useState(false)
+  const [showVisionApiKey, setShowVisionApiKey] = useState(false)
   const [enableCustomPrompt, setEnableCustomPrompt] = useState(customPrompt.trim().length > 0)
   const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
+
+  // API test state
+  const [apiTestResult, setApiTestResult] = useState<{
+    running: boolean
+    success?: boolean
+    latencyMs?: number
+    error?: string
+  } | null>(null)
+  const [visionTestResult, setVisionTestResult] = useState<{
+    running: boolean
+    success?: boolean
+    latencyMs?: number
+    similarity?: number
+    extractedText?: string
+    error?: string
+  } | null>(null)
+  const [customImagePath, setCustomImagePath] = useState<string | null>(null)
+  const [customExpectedText, setCustomExpectedText] = useState('')
+
+  const handleTestApiConnection = async () => {
+    setApiTestResult({ running: true })
+    const result = await window.api.testApiConnection()
+    setApiTestResult({ running: false, ...result })
+  }
+
+  const handleTestVisionCapability = async () => {
+    setVisionTestResult({ running: true })
+    const opts =
+      customImagePath || customExpectedText.trim()
+        ? { imagePath: customImagePath || undefined, expectedText: customExpectedText.trim() || undefined }
+        : undefined
+    const result = await window.api.testVisionCapability(opts)
+    setVisionTestResult({ running: false, ...result })
+  }
+
+  const handleSelectCustomImage = async () => {
+    const filePath = await window.api.selectImageFile()
+    if (filePath) setCustomImagePath(filePath)
+  }
 
   useEffect(() => {
     return () => {
@@ -181,6 +225,205 @@ export default function SettingsPage() {
                 </span>
               </label>
               <SelectModel value={model} onChange={(val) => updateSetting('model', val)} />
+            </div>
+          </div>
+
+          {/* Vision Model Settings */}
+          <div className="mt-4 pt-4 border-t border-gray-400/30 space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">
+                使用独立视觉模型
+                <span className="ml-2 text-xs font-light">
+                  开启后，图片解析和题目解答分别使用不同模型，适合主模型不支持图片的情况
+                </span>
+              </label>
+              <Switch
+                className="scale-y-90"
+                checked={useSeparateVisionModel}
+                onCheckedChange={(checked) => updateSetting('useSeparateVisionModel', checked)}
+              />
+            </div>
+
+            {useSeparateVisionModel && (
+              <>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">
+                    视觉 API Base URL
+                    <span className="ml-2 text-xs font-light">
+                      用于解析图片的 API 地址，如 https://api.siliconflow.cn/v1
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    value={visionApiBaseURL}
+                    onChange={(e) => updateSetting('visionApiBaseURL', e.target.value)}
+                    className="w-60 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="留空则使用主 API 地址"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">视觉 API Key</label>
+                  <div className="flex items-center w-60">
+                    <input
+                      type={showVisionApiKey ? 'text' : 'password'}
+                      value={visionApiKey}
+                      onChange={(e) => updateSetting('visionApiKey', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="留空则使用主 API Key"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowVisionApiKey(!showVisionApiKey)}
+                      className="border border-l-0 rounded-l-none rounded-r-md h-9 w-9 hover:border-none"
+                    >
+                      {showVisionApiKey ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">
+                    视觉模型
+                    <span className="ml-2 text-xs font-light">
+                      用于解析图片的模型，需支持视觉输入
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    value={visionModel}
+                    onChange={(e) => updateSetting('visionModel', e.target.value)}
+                    className="w-60 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="如 Qwen/Qwen3-VL-32B-Instruct"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* API Detection */}
+          <div className="mt-4 pt-4 border-t border-gray-400/30 space-y-3">
+            <label className="text-sm font-medium">
+              API 连接检测
+              <span className="ml-2 text-xs font-light">
+                检测 API 连通性和模型能力
+              </span>
+            </label>
+
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTestApiConnection}
+                disabled={apiTestResult?.running}
+              >
+                {apiTestResult?.running ? '检测中...' : '检测 API 连接'}
+              </Button>
+              {apiTestResult && !apiTestResult.running && (
+                <span
+                  className={`text-xs ${apiTestResult.success ? 'text-green-600' : 'text-red-600'}`}
+                >
+                  {apiTestResult.success
+                    ? `连接成功，延迟 ${apiTestResult.latencyMs}ms`
+                    : `连接失败：${apiTestResult.error}`}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTestVisionCapability}
+                disabled={visionTestResult?.running}
+              >
+                {visionTestResult?.running ? '检测中...' : '检测图片解析能力'}
+              </Button>
+              {visionTestResult && !visionTestResult.running && (
+                <div className="text-xs flex-1">
+                  {visionTestResult.success ? (
+                    <div>
+                      <span className="text-green-600">
+                        图片解析成功，延迟 {visionTestResult.latencyMs}ms
+                      </span>
+                      {visionTestResult.similarity != null && (
+                        <span
+                          className={`ml-2 font-semibold ${
+                            visionTestResult.similarity >= 90
+                              ? 'text-green-600'
+                              : visionTestResult.similarity >= 70
+                                ? 'text-yellow-600'
+                                : 'text-red-600'
+                          }`}
+                        >
+                          相似度 {visionTestResult.similarity}%
+                          {visionTestResult.similarity >= 90
+                            ? ' ✅'
+                            : visionTestResult.similarity >= 70
+                              ? ' ⚠️ 一般'
+                              : ' ❌ 偏低'}
+                        </span>
+                      )}
+                      {visionTestResult.extractedText && (
+                        <div className="mt-1 p-2 bg-white/70 rounded border border-gray-300 text-gray-700 max-h-32 overflow-y-auto">
+                          <span className="font-medium text-gray-500">识别结果：</span>
+                          {visionTestResult.extractedText}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-red-600">解析失败：{visionTestResult.error}</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Custom test */}
+            <div className="pt-2 border-t border-gray-400/20 space-y-2">
+              <label className="text-xs font-medium text-gray-500">
+                自定义检测标准
+              </label>
+
+              <div className="flex items-center gap-3">
+                <Button variant="outline" size="sm" onClick={handleSelectCustomImage}>
+                  {customImagePath ? '更换图片' : '选择自定义图片'}
+                </Button>
+                {customImagePath ? (
+                  <span className="text-xs text-green-700 truncate max-w-48" title={customImagePath}>
+                    已选择：{customImagePath.split(/[\\/]/).pop()}
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-400">默认使用内置示例图片（两数相加链表题）</span>
+                )}
+                {customImagePath && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-red-500 h-6 px-2"
+                    onClick={() => setCustomImagePath(null)}
+                  >
+                    清除
+                  </Button>
+                )}
+              </div>
+
+              <div>
+                <textarea
+                  value={customExpectedText}
+                  onChange={(e) => setCustomExpectedText(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={3}
+                  placeholder={
+                    '输入图片中预期的题目文字，用于计算相似度。留空则使用默认示例的预期文本。\n\n示例：\n给你两个 非空 的链表，表示两个非负的整数。它们每位数字都是按照 逆序 的方式存储的，并且每个节点只能存储 一位 数字。请你将两个数相加，并以相同形式返回一个表示和的链表。'
+                  }
+                />
+                {!customExpectedText.trim() && !customImagePath && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    留空使用内置默认预期文本；选择自定义图片后建议填写对应的预期文字。
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>

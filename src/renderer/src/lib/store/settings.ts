@@ -26,6 +26,10 @@ interface Settings {
   recordDir: string
   recordEnabled: boolean
   recordSaveScreenshots: boolean
+  useSeparateVisionModel: boolean
+  visionApiBaseURL: string
+  visionApiKey: string
+  visionModel: string
 }
 
 interface SettingsStore extends Settings {
@@ -56,7 +60,11 @@ const defaultSettings: Settings = {
   ttsVoice: '',
   recordDir: '',
   recordEnabled: false,
-  recordSaveScreenshots: true
+  recordSaveScreenshots: true,
+  useSeparateVisionModel: false,
+  visionApiBaseURL: '',
+  visionApiKey: '',
+  visionModel: ''
 }
 
 export const useSettingsStore = create<SettingsStore>()(

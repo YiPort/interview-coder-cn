@@ -4,7 +4,7 @@ import type { ModelMessage } from 'ai'
 import { applyContentProtection } from './main-window'
 import { takeScreenshot } from './take-screenshot'
 import { saveScreenshotToDisk } from './save-screenshot'
-import { getSolutionStream, getFollowUpStream, getGeneralStream, getVoiceStream } from './ai'
+import { getSolutionStream, getFollowUpStream, getGeneralStream, getVoiceStream, buildScreenshotMessages } from './ai'
 import { state } from './state'
 import { settings } from './settings'
 import { getTranscriptionText, clearTranscriptionText } from './transcription'
@@ -43,8 +43,14 @@ function extractErrorMessage(error: unknown): string {
     }
   }
 
+  // Detect vision-incompatible model error
+  const msg = error.message || ''
+  if (msg.includes('image_url') && (msg.includes('expected `text`') || msg.includes('unknown variant'))) {
+    return '当前配置的模型不支持图片输入（截图功能）。DeepSeek 等纯文本模型的 API 不支持视觉识别。\n请切换至支持视觉模型的 API 服务商，如硅基流动 (https://api.siliconflow.cn/v1) 并使用 Qwen/Qwen3-VL-32B-Instruct 模型。'
+  }
+
   // Fallback to error message
-  return error.message || '未知错误'
+  return msg || '未知错误'
 }
 
 type Shortcut = {
@@ -261,23 +267,19 @@ const callbacks: Record<string, () => void> = {
         clearTranscriptionText()
         mainWindow.webContents.send('transcription-cleared')
       }
-      conversationMessages = [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: transcriptionText
-                ? `这是语音转录内容：\n${transcriptionText}\n\n同时附上屏幕截图：`
-                : '这是屏幕截图'
-            },
-            {
-              type: 'image',
-              image: screenshotData
-            }
-          ]
-        }
-      ]
+      const { messages, extractedText } = await buildScreenshotMessages(
+        screenshotData,
+        transcriptionText || null
+      )
+      conversationMessages = messages as ModelMessage[]
+
+      // Show extracted text from vision model in the UI
+      if (extractedText) {
+        mainWindow.webContents.send(
+          'solution-chunk',
+          `> **📷 图片识别结果：** ${extractedText}\n\n`
+        )
+      }
 
       const streamContext: StreamContext = {
         controller: new AbortController(),
@@ -391,23 +393,33 @@ const callbacks: Record<string, () => void> = {
         clearTranscriptionText()
         mainWindow.webContents.send('transcription-cleared')
       }
-      // Append new image message to conversation
-      const newUserMessage: ModelMessage = {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: transcriptionText
-              ? `这是下一部分截图和语音转录内容：\n${transcriptionText}\n请结合之前所有截图和分析，继续分析解答，不要遗漏任何信息。`
-              : '这是下一部分截图，请结合之前所有截图和分析，继续分析解答，不要遗漏任何信息。'
-          },
-          {
-            type: 'image',
-            image: screenshotData
-          }
-        ]
+      // Append new message to conversation
+      if (settings.useSeparateVisionModel) {
+        const { extractedText } = await buildScreenshotMessages(screenshotData, transcriptionText || null)
+        const textContent = transcriptionText
+          ? `语音转录：${transcriptionText}\n\n追加截图内容：${extractedText || ''}`
+          : `追加截图内容：${extractedText || ''}`
+        conversationMessages.push({
+          role: 'user',
+          content: [{ type: 'text', text: textContent }]
+        })
+        if (extractedText) {
+          mainWindow.webContents.send('solution-chunk', `> **📷 追加截图识别：** ${extractedText}\n\n`)
+        }
+      } else {
+        conversationMessages.push({
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: transcriptionText
+                ? `这是下一部分截图和语音转录内容：\n${transcriptionText}\n请结合之前所有截图和分析，继续分析解答，不要遗漏任何信息。`
+                : '这是下一部分截图，请结合之前所有截图和分析，继续分析解答，不要遗漏任何信息。'
+            },
+            { type: 'image', image: screenshotData }
+          ]
+        })
       }
-      conversationMessages.push(newUserMessage)
 
       const streamContext: StreamContext = {
         controller: new AbortController(),

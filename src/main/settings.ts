@@ -46,7 +46,11 @@ export const settings = {
   micDeviceId: '',
   recordDir: '',
   recordEnabled: false,
-  recordSaveScreenshots: true
+  recordSaveScreenshots: true,
+  useSeparateVisionModel: false,
+  visionApiBaseURL: '',
+  visionApiKey: '',
+  visionModel: ''
 }
 
 export type AppSettings = typeof settings

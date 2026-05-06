@@ -275,6 +275,23 @@ const api = {
 
   selectRecordDir: () => ipcRenderer.invoke('selectRecordDir') as Promise<string | null>,
 
+  // API test
+  testApiConnection: () =>
+    ipcRenderer.invoke('test-api-connection') as Promise<{
+      success: boolean
+      latencyMs: number
+      error?: string
+    }>,
+  testVisionCapability: (opts?: { imagePath?: string; expectedText?: string }) =>
+    ipcRenderer.invoke('test-vision-capability', opts) as Promise<{
+      success: boolean
+      latencyMs: number
+      similarity?: number
+      extractedText?: string
+      error?: string
+    }>,
+  selectImageFile: () => ipcRenderer.invoke('select-image-file') as Promise<string | null>,
+
 }
 
 export type MainAPI = typeof api
