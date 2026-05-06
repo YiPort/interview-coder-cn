@@ -30,7 +30,9 @@ export const settings = {
   dashscopeApiKey: '',
   ttsProvider: 'web-speech' as 'web-speech' | 'dashscope',
   ttsEnabled: true,
-  audioSource: 'system' as 'system' | 'microphone'
+  audioSource: 'system' as 'system' | 'microphone',
+  systemAudioDeviceId: '',
+  micDeviceId: ''
 }
 
 export type AppSettings = typeof settings

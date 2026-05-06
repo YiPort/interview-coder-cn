@@ -95,7 +95,7 @@ const defaultShortcuts: Record<string, Omit<Shortcut, 'defaultKey'>> = {
   },
   voiceQuery: {
     action: 'voiceQuery',
-    key: `${platformAlt}+V`,
+    key: `${platformAlt}+Z`,
     category: 'Voice'
   },
   toggleTTS: {

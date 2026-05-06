@@ -227,7 +227,8 @@ const api = {
   },
   removeTtsSpeakTextListener: () => {
     ipcRenderer.removeAllListeners('tts-speak-text')
-  }
+  },
+
 }
 
 export type MainAPI = typeof api

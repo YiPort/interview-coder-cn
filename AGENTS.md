@@ -14,7 +14,7 @@ Key capabilities:
 - Follow-up questions within the same conversation
 - Real-time speech transcription (DashScope Fun-ASR) — transcribed text is attached to screenshots when sent to AI
 - **NEW: TTS (Text-to-Speech)** — AI answers read aloud via Web Speech API or DashScope CosyVoice
-- **NEW: Voice conversation mode** — speak questions without screenshots (Alt+V to toggle)
+- **NEW: Voice conversation mode** — speak questions without screenshots (Alt+Z to toggle)
 - **NEW: Microphone input** — audio source selectable between system audio and microphone
 - **NEW: Chat-style display** — user voice messages and AI responses shown as conversation bubbles
 - **NEW: Conversation export** — download full conversation history as Markdown
@@ -147,10 +147,10 @@ src/
 
 ### Voice Conversation Flow
 
-1. User presses `Alt+V` → main sends `toggle-voice-conversation` to renderer
+1. User presses `Alt+Z` → main sends `toggle-voice-conversation` to renderer
 2. Renderer starts mic capture → PCM chunks → main transcription WebSocket
 3. Transcription text displayed in `TranscriptionBar` in real-time
-4. User presses `Alt+V` again → renderer stops capture, sends transcription text to main via `send-voice-query`
+4. User presses `Alt+Z` again → renderer stops capture, sends transcription text to main via `send-voice-query`
 5. Main builds conversation, streams AI response via `getVoiceStream()`
 6. User message and AI response displayed as chat bubbles (👤 / 🤖)
 7. On completion: TTS reads the latest AI response aloud
@@ -234,7 +234,7 @@ The app is designed to be invisible to screen-sharing software:
 
 ### Voice Conversation Mode
 
-- Triggered by `Alt+V` shortcut or settings UI
+- Triggered by `Alt+Z` shortcut or settings UI
 - Captures audio (system or mic), transcribes via DashScope, sends text-only to AI via `getVoiceStream()`
 - Uses a conversational system prompt optimized for spoken dialogue
 - Responses displayed in chat format (👤 user bubble + 🤖 AI label)

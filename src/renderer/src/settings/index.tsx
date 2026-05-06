@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router'
 import {
   ArrowLeft,
@@ -36,17 +36,43 @@ export default function SettingsPage() {
     ttsProvider,
     ttsEnabled,
     audioSource,
+    systemAudioDeviceId,
+    micDeviceId,
     updateSetting
   } = useSettingsStore()
   const [showApiKey, setShowApiKey] = useState(false)
   const [showDashscopeApiKey, setShowDashscopeApiKey] = useState(false)
   const [enableCustomPrompt, setEnableCustomPrompt] = useState(customPrompt.trim().length > 0)
+  const [audioDevices, setAudioDevices] = useState<MediaDeviceInfo[]>([])
 
   useEffect(() => {
     return () => {
       document.body.style.opacity = ''
     }
   }, [])
+
+  const enumerateDevices = useCallback(async () => {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const inputs = devices
+        .filter((d) => d.kind === 'audioinput' && d.deviceId)
+        .map((d) => ({ deviceId: d.deviceId, groupId: d.groupId, kind: d.kind, label: d.label })) as MediaDeviceInfo[]
+      setAudioDevices(inputs)
+      if (inputs.length > 0 && !micDeviceId) {
+        updateSetting('micDeviceId', inputs[0].deviceId)
+      }
+    } catch {
+      // Device enumeration may fail without permission
+    }
+  }, [micDeviceId, updateSetting])
+
+  useEffect(() => {
+    enumerateDevices()
+    navigator.mediaDevices.addEventListener('devicechange', enumerateDevices)
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', enumerateDevices)
+    }
+  }, [enumerateDevices])
 
   const handleCustomPromptToggle = (checked: boolean) => {
     setEnableCustomPrompt(checked)
@@ -175,36 +201,97 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">
+            <div className="flex items-start justify-between">
+              <label className="text-sm font-medium pt-1">
                 音频来源
-                <span className="ml-2 text-xs font-light">
-                  选择系统音频（电脑声音）或麦克风作为语音输入源
+                <span className="ml-2 text-xs font-light block mt-0.5">
+                  系统音频捕获电脑播放的声音（面试官语音、视频声音等），
+                  <br />
+                  麦克风捕获你说话的声音
                 </span>
               </label>
-              <div className="w-60 flex items-center gap-2">
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="audioSource"
-                    value="system"
-                    checked={audioSource === 'system'}
-                    onChange={() => updateSetting('audioSource', 'system')}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">系统音频</span>
-                </label>
-                <label className="flex items-center gap-1 cursor-pointer ml-4">
-                  <input
-                    type="radio"
-                    name="audioSource"
-                    value="microphone"
-                    checked={audioSource === 'microphone'}
-                    onChange={() => updateSetting('audioSource', 'microphone')}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">麦克风</span>
-                </label>
+              <div className="w-60 space-y-3">
+                {/* System audio — uses Stereo Mix (立体声混音) virtual device via getUserMedia */}
+                <div
+                  className={`border rounded-md p-3 cursor-pointer transition-colors ${
+                    audioSource === 'system'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 bg-white hover:border-gray-400'
+                  }`}
+                  onClick={() => updateSetting('audioSource', 'system')}
+                >
+                  <label className="flex items-center gap-1 cursor-pointer mb-1">
+                    <input
+                      type="radio"
+                      name="audioSource"
+                      value="system"
+                      checked={audioSource === 'system'}
+                      onChange={() => updateSetting('audioSource', 'system')}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm font-medium">系统音频</span>
+                    <span className="text-xs text-gray-400 ml-1">（电脑声音）</span>
+                  </label>
+                  <p className="text-xs text-gray-400 ml-5 mb-2">
+                    需先在 Windows 中启用"立体声混音"设备（详见 README），然后在下拉列表中选择该设备
+                  </p>
+                  {audioDevices.length > 0 && (
+                    <select
+                      value={systemAudioDeviceId}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        e.stopPropagation()
+                        updateSetting('systemAudioDeviceId', e.target.value)
+                      }}
+                      className="w-full px-2 py-1.5 border border-gray-200 rounded bg-gray-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {audioDevices.map((device) => (
+                        <option key={device.deviceId} value={device.deviceId}>
+                          {device.label || `设备 (${device.deviceId.slice(0, 8)}...)`}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+                {/* Microphone — uses getUserMedia, device dropdown for mic selection */}
+                <div
+                  className={`border rounded-md p-3 cursor-pointer transition-colors ${
+                    audioSource === 'microphone'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 bg-white hover:border-gray-400'
+                  }`}
+                  onClick={() => updateSetting('audioSource', 'microphone')}
+                >
+                  <label className="flex items-center gap-1 cursor-pointer mb-1">
+                    <input
+                      type="radio"
+                      name="audioSource"
+                      value="microphone"
+                      checked={audioSource === 'microphone'}
+                      onChange={() => updateSetting('audioSource', 'microphone')}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm font-medium">麦克风</span>
+                    <span className="text-xs text-gray-400 ml-1">（你的声音）</span>
+                  </label>
+                  {audioDevices.length > 0 && (
+                    <select
+                      value={micDeviceId}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        e.stopPropagation()
+                        updateSetting('micDeviceId', e.target.value)
+                      }}
+                      className="w-full px-2 py-1.5 border border-gray-200 rounded bg-gray-50 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {audioDevices.map((device) => (
+                        <option key={device.deviceId} value={device.deviceId}>
+                          {device.label || `设备 (${device.deviceId.slice(0, 8)}...)`}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
               </div>
             </div>
           </div>

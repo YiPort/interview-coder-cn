@@ -13,8 +13,16 @@ import { AppStatusBar } from './AppStatusBar'
 import { PrerequisitesChecker } from './PrerequisitesChecker'
 import { TranscriptionBar } from './TranscriptionBar'
 
+/** Pick the right device ID based on current audio source. */
+function getDeviceId(): string | undefined {
+  const { audioSource, systemAudioDeviceId, micDeviceId } = useSettingsStore.getState()
+  const id = audioSource === 'system' ? systemAudioDeviceId : micDeviceId
+  return id || undefined
+}
+
 export default function CoderPage() {
-  const { opacity, dashscopeApiKey, audioSource } = useSettingsStore()
+  const { opacity, dashscopeApiKey, audioSource, systemAudioDeviceId, micDeviceId } =
+    useSettingsStore()
   const { syncAppState } = useAppStore()
   const { isTranscribing, setIsTranscribing, setTranscriptionText, clearText } =
     useTranscriptionStore()
@@ -56,14 +64,18 @@ export default function CoderPage() {
           return
         }
         try {
-          await startAudioCapture(audioSource)
+          await startAudioCapture(
+            audioSource === 'system'
+              ? (systemAudioDeviceId || undefined)
+              : (micDeviceId || undefined)
+          )
           await window.api.startTranscription(dashscopeApiKey)
           setIsTranscribing(true)
           setErrorMessage(null)
         } catch (err) {
           console.error('Failed to start transcription:', err)
           stopAudioCapture()
-          setErrorMessage('启动语音转录失败，请检查系统音频权限')
+          setErrorMessage('启动语音转录失败，请检查音频设备权限。如果使用系统音频，请确认已启用"立体声混音"设备（详见 README）。')
         }
       }
     }
@@ -72,7 +84,7 @@ export default function CoderPage() {
     return () => {
       window.api.removeToggleTranscriptionListener()
     }
-  }, [isTranscribing, dashscopeApiKey, audioSource, setIsTranscribing, setErrorMessage])
+  }, [isTranscribing, dashscopeApiKey, audioSource, systemAudioDeviceId, micDeviceId, setIsTranscribing, setErrorMessage])
 
   useEffect(() => {
     window.api.onTranscriptionText((data) => {
@@ -131,13 +143,13 @@ export default function CoderPage() {
         }
       } else {
         // Start voice mode: start audio capture, start transcription
-        const { dashscopeApiKey: apiKey, audioSource: source } = useSettingsStore.getState()
+        const { dashscopeApiKey: apiKey } = useSettingsStore.getState()
         if (!apiKey) {
           setErrorMessage('请先在设置中配置百炼平台 API Key')
           return
         }
         try {
-          await startAudioCapture(source)
+          await startAudioCapture(getDeviceId())
           await window.api.startTranscription(apiKey)
           setVoiceMode(true)
           useTranscriptionStore.getState().setIsTranscribing(true)
@@ -145,7 +157,7 @@ export default function CoderPage() {
         } catch (err) {
           console.error('Failed to start voice conversation:', err)
           stopAudioCapture()
-          setErrorMessage('启动语音对话失败，请检查麦克风权限')
+          setErrorMessage('启动语音对话失败，请检查音频设备权限。如果使用系统音频，请确认已启用"立体声混音"设备（详见 README）。')
         }
       }
     }

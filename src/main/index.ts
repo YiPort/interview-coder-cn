@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { app, BrowserWindow, desktopCapturer, globalShortcut, session } from 'electron'
+import { app, BrowserWindow, globalShortcut, session } from 'electron'
 
 type AbortLikeError = {
   name?: string
@@ -26,6 +26,7 @@ process.on('uncaughtException', (error) => {
   if (isAbortError(error)) return
   console.error(error)
 })
+
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import './shortcuts'
 import './transcription'
@@ -39,15 +40,6 @@ import { initAutoUpdater } from './auto-updater'
 app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
-
-  // Auto-approve getDisplayMedia for system audio loopback capture
-  session.defaultSession.setDisplayMediaRequestHandler((_request, callback) => {
-    desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-      if (sources.length > 0) {
-        callback({ video: sources[0], audio: 'loopback' })
-      }
-    })
-  })
 
   // Auto-approve microphone permission for getUserMedia
   session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {

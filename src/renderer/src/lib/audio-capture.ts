@@ -20,24 +20,24 @@ function createPCMProcessor(source: MediaStream): void {
   processor.connect(audioContext.destination)
 }
 
-export async function startAudioCapture(
-  source: 'system' | 'microphone' = 'system'
-): Promise<void> {
-  if (source === 'system') {
-    const stream = await navigator.mediaDevices.getDisplayMedia({
-      audio: true,
-      video: true
-    })
-    stream.getVideoTracks().forEach((t) => t.stop())
-    mediaStream = stream
-    createPCMProcessor(new MediaStream(stream.getAudioTracks()))
-  } else {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { sampleRate: 16000, channelCount: 1 }
-    })
-    mediaStream = stream
-    createPCMProcessor(stream)
+/**
+ * Capture audio from a specific input device via getUserMedia.
+ * For system audio, select "Stereo Mix" (立体声混音) or similar loopback device.
+ * For your own voice, select your physical microphone.
+ */
+export async function startAudioCapture(deviceId?: string): Promise<void> {
+  const audioConstraints: MediaTrackConstraints = {
+    sampleRate: 16000,
+    channelCount: 1
   }
+  if (deviceId) {
+    audioConstraints.deviceId = { exact: deviceId }
+  }
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: audioConstraints
+  })
+  mediaStream = stream
+  createPCMProcessor(stream)
 }
 
 export function stopAudioCapture(): void {

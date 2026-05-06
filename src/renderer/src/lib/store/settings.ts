@@ -20,6 +20,8 @@ interface Settings {
   ttsProvider: 'web-speech' | 'dashscope'
   ttsEnabled: boolean
   audioSource: 'system' | 'microphone'
+  systemAudioDeviceId: string
+  micDeviceId: string
   ttsVoice: string
 }
 
@@ -46,6 +48,8 @@ const defaultSettings: Settings = {
   ttsProvider: 'web-speech' as const,
   ttsEnabled: true,
   audioSource: 'system' as const,
+  systemAudioDeviceId: '',
+  micDeviceId: '',
   ttsVoice: ''
 }
 
