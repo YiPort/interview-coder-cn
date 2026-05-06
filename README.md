@@ -1,0 +1,125 @@
+# Interview Coder CN（语音版）
+
+![使用演示](assets/480978992-19781594-3108-4711-a54b-9d36496787bc.gif)
+
+桌面端编程面试辅助工具：截图 → AI 实时分析 → 流式生成解题思路和代码。窗口在屏幕分享时不可见。
+
+## 项目简介
+
+这是一个面向中文用户的编程解题助手，适配国内 AI 生态，简单易用。
+
+### 适用场景
+
+- **编程面试** — 分析屏幕上的题目，实时给出解题思路和代码，即便面试官要求分享屏幕，也不会被发现
+- **笔试题目** — 不会导致笔试网页失焦，可规避"跳出网页"检测
+- **其他场景** — 英语机试、在线考试等，可通过设置界面配置"自定义提示词"自行扩展
+
+### 核心能力
+
+- 通过全局快捷键抓取屏幕内容，发送给大模型进行分析
+- 窗口在屏幕分享时不可见（腾讯会议等主流软件）
+- 窗口置顶半透明展示，不会导致原页面失焦，从而规避"跳出网页"检测
+- 支持系统音频或麦克风实时语音转文字（STT），截图时自动附带
+- 支持 AI 答案语音朗读（TTS），浏览器内置语音或高质量 AI 语音
+
+### 项目特点
+
+- **简单易用** — 只需配置 `API_BASE_URL` 和 `API_KEY` 即可开始使用
+- **多题型支持** — 重点支持编程算法题，同时支持单选、多选、解答等题型
+- **多语言** — 支持 Python、JavaScript、Java、C++ 等多种编程语言
+- **隐身能力** — 即使被要求分享屏幕，面试官也看不到解题助手的界面
+
+## 功能
+
+- **截图分析** — 全局快捷键截图，AI 流式输出答案
+- **隐身窗口** — 屏幕分享时不可见（腾讯会议等），置顶半透明，支持鼠标穿透
+- **语音转录 (STT)** — 系统音频或麦克风实时转文字，截图时自动附带
+- **AI 答案朗读 (TTS)** — 浏览器内置语音（免费）或阿里云百炼 CosyVoice（高音质）
+- **语音对话** — `Alt+V` 开始说话，再按结束，AI 回答并朗读
+- **多截图对话** — 同一会话追加截图，支持追问
+- **对话导出** — 一键导出 Markdown
+- **多平台兼容** — OpenAI / 硅基流动 / DeepSeek / OpenRouter 等任意 OpenAI 兼容 API
+
+## 快速开始
+
+> 项目运行依赖 Node.js 环境，如未安装请先访问 [Node.js 官网](https://nodejs.org/zh-cn/download) 下载安装。
+
+```bash
+npm install
+npm run dev
+```
+
+启动后进入「设置」页面，配置 `API Base URL` 和 `API Key`。
+
+也可在项目根目录创建 `.env` 文件预配置，程序启动后会自动读取作为默认值：
+
+```env
+API_BASE_URL="https://api.deepseek.com/v1"
+API_KEY="sk-..."
+MODEL="deepseek-v4-pro"
+```
+
+### 配置 API 服务商
+
+API 地址和 API Key 可从支持 OpenAI API 格式的服务商获取，例如：
+
+- [硅基流动 (SiliconFlow)](https://cloud.siliconflow.cn/) — 国内服务商，支持支付宝
+- [DeepSeek](https://platform.deepseek.com/) — 国内服务商，性价比高
+- [OpenRouter](https://openrouter.ai/) — 聚合服务，模型选择丰富
+- OpenAI 官方 API — 海外用户可直接使用
+
+### （可选）配置语音功能
+
+语音转录和高质量 TTS 功能使用阿里云百炼平台，需要额外配置：
+
+1. 访问 [百炼平台控制台](https://help.aliyun.com/zh/model-studio/get-api-key) 注册并创建 API Key
+2. 在应用「设置」页面的「语音转录」部分填入 API Key
+3. STT 使用 Fun-ASR 模型（0.02 元/分钟，新用户有 10 小时免费额度）
+4. TTS 可选免费的浏览器内置语音，或付费的 CosyVoice（更高音质）
+
+## 快捷键
+
+| 键位 | 功能 |
+| ---- | ---- |
+| `Alt+Enter` | 截图分析（新会话） |
+| `Alt+Shift+Enter` | 追加截图 |
+| `Alt+.` | 停止生成 |
+| `Alt+V` | 语音对话模式 |
+| `Alt+T` | 语音转录 |
+| `Alt+B` | 切换 TTS 朗读 |
+| `Alt+H` | 显示/隐藏窗口 |
+| `Alt+M` | 鼠标穿透 |
+| `Ctrl+J` / `Ctrl+K` | 上下翻页 |
+| `Ctrl+↑↓←→` | 移动窗口 |
+
+## 关于隐身能力的说明
+
+目前隐身功能适配市面上大部分会议软件（如腾讯会议等），但少数软件和浏览器可能无法正常隐身。使用前请自行测试，本项目不承担任何责任。
+
+## 技术栈
+
+| 层级 | 技术 |
+| ---- | ---- |
+| 框架 | Electron 37 (electron-vite 4) |
+| 前端 | React 19, TypeScript 5.8 |
+| 样式 | Tailwind CSS v4, shadcn/ui (New York) |
+| 状态管理 | Zustand 5 |
+| AI | Vercel AI SDK (`ai` + `@ai-sdk/openai`)，流式输出 |
+| STT | 阿里云百炼 Fun-ASR (WebSocket, PCM 16kHz) |
+| TTS | Web Speech API（免费）+ 阿里云百炼 CosyVoice (WebSocket, PCM 24kHz) |
+
+## 类似项目
+
+- [cheating-daddy](https://github.com/sohzm/cheating-daddy) — Soham Parekh 的作品
+- [glass](https://github.com/pickle-com/glass)
+- [interview-coder-withoupaywall-opensource](https://github.com/j4wg/interview-coder-withoupaywall-opensource)
+
+## 许可
+
+本项目采用 [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/deed.zh) 协议许可。
+
+您可以自由使用、复制、修改本项目代码，但 **禁止任何形式的商业用途**，包括但不限于售卖、集成入商业产品、SaaS 服务等。如需商业授权，请联系作者获得书面许可。
+
+---
+
+本项目基于 [ooboqoo/interview-coder-cn](https://github.com/ooboqoo/interview-coder-cn) 二次开发，新增了语音交互系统（TTS 朗读、语音对话、麦克风输入、对话导出）。
