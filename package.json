@@ -20,7 +20,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ooboqoo/interview-coder-cn.git"
+    "url": "git+https://github.com/yiport/interview-coder-cn.git"
   },
   "keywords": [
     "解题助手",
@@ -29,12 +29,12 @@
     "coding interview",
     "LeetCode"
   ],
-  "author": "Gavin Wang<ooboqoo@gmail.com>",
+  "author": "YiPort <woaichina1413@gmail.com>",
   "license": "CC BY-NC 4.0",
   "bugs": {
-    "url": "https://github.com/ooboqoo/interview-coder-cn/issues"
+    "url": "https://github.com/yiport/interview-coder-cn/issues"
   },
-  "homepage": "https://github.com/ooboqoo/interview-coder-cn#readme",
+  "homepage": "https://github.com/yiport/interview-coder-cn#readme",
   "dependencies": {
     "@ai-sdk/openai": "^2.0.16",
     "@electron-toolkit/preload": "^3.0.2",

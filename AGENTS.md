@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**Interview Coder CN (Voice Enhanced)** is a desktop application forked from [ooboqoo/interview-coder-cn](https://github.com/ooboqoo/interview-coder-cn). It captures screenshots of coding problems and uses AI (vision models) to generate solutions in real-time. The window is invisible to screen-sharing software.
+**Interview Coder CN (Voice Enhanced)** is a desktop application forked from [yiport/interview-coder-cn](https://github.com/yiport/interview-coder-cn). It captures screenshots of coding problems and uses AI (vision models) to generate solutions in real-time. The window is invisible to screen-sharing software.
 
 This fork adds a complete voice interaction system: TTS (text-to-speech) for reading AI answers aloud, voice conversation mode (speak to AI without screenshots), microphone input support, and chat-style conversation display.
 

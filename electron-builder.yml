@@ -2,6 +2,7 @@ appId: com.electron.app
 productName: 解题助手
 directories:
   buildResources: build
+  output: dist-pkg
 files:
   - '!**/.vscode/*'
   - '!src/*'
@@ -42,7 +43,7 @@ appImage:
 npmRebuild: false
 publish:
   provider: github
-  owner: ooboqoo
+  owner: yiport
   repo: interview-coder-cn
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/

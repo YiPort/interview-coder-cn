@@ -36,15 +36,7 @@ export default function HelpPage() {
         <HelpSection Icon={Info} title="简介">
           <p className="text-gray-700">
             欢迎使用解题助手！针对 编码笔试 / 面试
-            场景，该工具可以帮助您快速截图，分析屏幕内容，并给出解题建议。 您可以访问本项目{' '}
-            <a
-              href="https://github.com/ooboqoo/interview-coder-cn/wiki"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-blue-600 hover:underline"
-            >
-              GitHub Wiki
-            </a>{' '}
+            场景，该工具可以帮助您快速截图，分析屏幕内容，并给出解题建议。
             获取更多帮助信息（如隐身相关配置、API Key 申请等）。
           </p>
           <div className="bg-gray-700/10 rounded-lg p-4">
@@ -103,7 +95,7 @@ export default function HelpPage() {
               <p className="text-gray-700">
                 在{' '}
                 <a
-                  href="https://github.com/ooboqoo/interview-coder-cn/issues"
+                  href="https://github.com/yiport/interview-coder-cn/issues"
                   target="_blank"
                   rel="noreferrer"
                   className="text-blue-600 hover:underline"
