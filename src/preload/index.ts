@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { AppSettings } from '../main/settings'
 import type { AppState } from '../main/state'
+import type { ResumeData, ResumeStructured } from '../main/resume'
 
 // Custom APIs for renderer
 const api = {
@@ -291,6 +292,21 @@ const api = {
       error?: string
     }>,
   selectImageFile: () => ipcRenderer.invoke('select-image-file') as Promise<string | null>,
+
+  // Resume Analysis
+  selectResumeFile: () => ipcRenderer.invoke('select-resume-file') as Promise<string | null>,
+  selectResumeImage: () => ipcRenderer.invoke('select-resume-image') as Promise<string | null>,
+  parseResumeFile: (filePath: string) =>
+    ipcRenderer.invoke('parse-resume-file', filePath) as Promise<string>,
+  parseResumeImage: (imagePath: string) =>
+    ipcRenderer.invoke('parse-resume-image', imagePath) as Promise<string>,
+  extractResumeStructured: () =>
+    ipcRenderer.invoke('extract-resume-structured') as Promise<ResumeStructured>,
+  searchCompanyInfo: (companyName: string) =>
+    ipcRenderer.invoke('search-company-info', companyName) as Promise<string>,
+  getResumeData: () => ipcRenderer.invoke('get-resume-data') as Promise<ResumeData>,
+  updateResumeData: (data: Partial<ResumeData>) =>
+    ipcRenderer.invoke('update-resume-data', data)
 
 }
 

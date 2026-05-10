@@ -6,6 +6,7 @@ import SettingsPage from '@/settings'
 import HelpPage from '@/help'
 import { useSettingsStore } from '@/lib/store/settings'
 import { useShortcutsStore } from '@/lib/store/shortcuts'
+import { useResumeStore } from '@/lib/store/resume'
 import { getCloneableFields } from '@/lib/utils'
 
 export default function App() {
@@ -35,6 +36,7 @@ export default function App() {
   useEffect(() => {
     if (initialized) {
       window.api.updateAppSettings(getCloneableFields(settingsStore))
+      useResumeStore.getState().syncToMain()
     }
   }, [initialized, settingsStore])
 

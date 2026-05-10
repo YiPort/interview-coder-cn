@@ -31,6 +31,7 @@ interface Settings {
   visionApiKey: string
   visionModel: string
   responseMode: 'core-code' | 'acm' | 'custom'
+  voiceWordLimit: number
 }
 
 interface SettingsStore extends Settings {
@@ -66,7 +67,8 @@ const defaultSettings: Settings = {
   visionApiBaseURL: '',
   visionApiKey: '',
   visionModel: '',
-  responseMode: 'core-code' as const
+  responseMode: 'core-code' as const,
+  voiceWordLimit: 500
 }
 
 export const useSettingsStore = create<SettingsStore>()(

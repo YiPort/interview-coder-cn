@@ -12,7 +12,11 @@ import {
   FolderOpen,
   Mic,
   Volume2,
-  Radio
+  Radio,
+  FileText,
+  Search,
+  Upload,
+  Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
@@ -21,6 +25,7 @@ import { Switch } from '@/components/ui/switch'
 import { useSettingsStore } from '@/lib/store/settings'
 import { useShortcutsStore } from '@/lib/store/shortcuts'
 import { useRecorderStore } from '@/lib/store/recorder'
+import { useResumeStore } from '@/lib/store/resume'
 import { startDualCapture, stopDualCapture } from '@/lib/recorder-capture'
 import ShortcutRenderer from '@/components/ShortcutRenderer'
 import { SelectModel } from './SelectModel'
@@ -51,10 +56,38 @@ export default function SettingsPage() {
     visionApiKey,
     visionModel,
     responseMode,
+    voiceWordLimit,
     updateSetting
   } = useSettingsStore()
   const { shortcuts } = useShortcutsStore()
   const { isRecording, systemSentenceCount, micSentenceCount } = useRecorderStore()
+  const {
+    enabled: resumeEnabled,
+    jd,
+    companyName,
+    companyInfo,
+    priority,
+    rawText,
+    structured,
+    isParsing,
+    isExtracting,
+    isSearching,
+    selectedFileName,
+    errorMessage: resumeError,
+    setEnabled: setResumeEnabled,
+    setJd,
+    setCompanyName,
+    setPriority,
+    setRawText,
+    setStructured,
+    setCompanyInfo,
+    setIsParsing,
+    setIsExtracting,
+    setIsSearching,
+    setSelectedFileName,
+    setErrorMessage,
+    clearResume
+  } = useResumeStore()
   const startRecKey = shortcuts.startRecording?.key || 'Ctrl+1'
   const stopRecKey = shortcuts.stopRecording?.key || 'Ctrl+2'
   const [showApiKey, setShowApiKey] = useState(false)
@@ -419,6 +452,393 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+        {/* Resume Analysis */}
+        <div className="bg-gray-300/80 rounded-lg p-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center">
+            <FileText className="h-5 w-5 mr-2" />
+            简历分析
+            <span className="text-sm font-light ml-2 mt-0.5">
+              上传简历，AI 提取关键信息，辅助针对性面试回答
+            </span>
+          </h2>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">
+                启用简历上下文
+                <span className="ml-2 text-xs font-light">
+                  开启后，AI 回答时会参考你的简历背景
+                </span>
+              </label>
+              <Switch
+                className="scale-y-90"
+                checked={resumeEnabled}
+                onCheckedChange={(checked) => setResumeEnabled(checked)}
+              />
+            </div>
+
+            <div className={`space-y-4 ${!resumeEnabled ? 'opacity-40 pointer-events-none' : ''}`}>
+              {/* Upload — parses and immediately AI-extracts */}
+              <div className="flex items-start justify-between">
+                <label className="text-sm font-medium pt-1">
+                  上传简历
+                  <span className="ml-2 text-xs font-light block mt-0.5">
+                    支持 PDF、Word、Markdown、TXT 或截图，上传后自动 AI 分析
+                  </span>
+                </label>
+                <div className="w-60 space-y-2">
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      disabled={isParsing || isExtracting}
+                      onClick={async () => {
+                        const filePath = await window.api.selectResumeFile()
+                        if (!filePath) return
+                        const name = filePath.split(/[\\/]/).pop() || filePath
+                        setSelectedFileName(name)
+                        setIsParsing(true)
+                        setErrorMessage(null)
+                        try {
+                          const text = await window.api.parseResumeFile(filePath)
+                          setRawText(text)
+                          setIsParsing(false)
+                          setIsExtracting(true)
+                          try {
+                            const data = await window.api.extractResumeStructured()
+                            setStructured(data)
+                          } catch (err) {
+                            setErrorMessage(err instanceof Error ? err.message : 'AI 提取失败')
+                          }
+                        } catch (err) {
+                          setErrorMessage(err instanceof Error ? err.message : '解析失败')
+                          setSelectedFileName(null)
+                        } finally {
+                          setIsParsing(false)
+                          setIsExtracting(false)
+                        }
+                      }}
+                    >
+                      {(isParsing || isExtracting) ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4 mr-1" />
+                      )}
+                      {isParsing ? '解析中...' : isExtracting ? 'AI 分析中...' : '选择文件'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isParsing || isExtracting}
+                      onClick={async () => {
+                        const filePath = await window.api.selectResumeImage()
+                        if (!filePath) return
+                        const name = filePath.split(/[\\/]/).pop() || filePath
+                        setSelectedFileName(name)
+                        setIsParsing(true)
+                        setErrorMessage(null)
+                        try {
+                          const text = await window.api.parseResumeImage(filePath)
+                          setRawText(text)
+                          setIsParsing(false)
+                          setIsExtracting(true)
+                          try {
+                            const data = await window.api.extractResumeStructured()
+                            setStructured(data)
+                          } catch (err) {
+                            setErrorMessage(err instanceof Error ? err.message : 'AI 提取失败')
+                          }
+                        } catch (err) {
+                          setErrorMessage(err instanceof Error ? err.message : '截图解析失败')
+                          setSelectedFileName(null)
+                        } finally {
+                          setIsParsing(false)
+                          setIsExtracting(false)
+                        }
+                      }}
+                    >
+                      截图
+                    </Button>
+                  </div>
+                  {selectedFileName && (
+                    <p className="text-xs text-green-700 truncate">
+                      已选择：{selectedFileName}
+                      {rawText && `（${rawText.length} 字符）`}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Editable structured fields — shown after AI extraction */}
+              {structured && (
+                <div className="pt-2 border-t border-gray-400/20 space-y-3">
+                  <label className="text-xs font-medium text-gray-500 flex items-center gap-1">
+                    <Search className="h-3 w-3" />
+                    AI 提取结果 — 请审核并修改
+                  </label>
+
+                  <div className="flex items-start justify-between">
+                    <label className="text-xs font-medium pt-1.5">技术栈</label>
+                    <input
+                      type="text"
+                      value={structured.techStack.join('、')}
+                      onChange={(e) =>
+                        setStructured({
+                          ...structured,
+                          techStack: e.target.value.split(/[、,，]/).map((s) => s.trim()).filter(Boolean)
+                        })
+                      }
+                      className="w-60 px-2 py-1.5 border border-gray-300 rounded-md bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="如：React、TypeScript、Node.js"
+                    />
+                  </div>
+
+                  <div className="flex items-start justify-between">
+                    <label className="text-xs font-medium pt-1.5">工作经历</label>
+                    <textarea
+                      value={structured.workExperience}
+                      onChange={(e) =>
+                        setStructured({ ...structured, workExperience: e.target.value })
+                      }
+                      className="w-60 px-2 py-1.5 border border-gray-300 rounded-md bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={3}
+                      placeholder="无"
+                    />
+                  </div>
+
+                  <div className="flex items-start justify-between">
+                    <label className="text-xs font-medium pt-1.5">实习经历</label>
+                    <textarea
+                      value={structured.internshipExperience}
+                      onChange={(e) =>
+                        setStructured({ ...structured, internshipExperience: e.target.value })
+                      }
+                      className="w-60 px-2 py-1.5 border border-gray-300 rounded-md bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={2}
+                      placeholder="无"
+                    />
+                  </div>
+
+                  <div className="flex items-start justify-between">
+                    <label className="text-xs font-medium pt-1.5">项目经历</label>
+                    <textarea
+                      value={structured.projectExperience}
+                      onChange={(e) =>
+                        setStructured({ ...structured, projectExperience: e.target.value })
+                      }
+                      className="w-60 px-2 py-1.5 border border-gray-300 rounded-md bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={3}
+                      placeholder="无"
+                    />
+                  </div>
+
+                  <div className="flex items-start justify-between">
+                    <label className="text-xs font-medium pt-1.5">教育背景</label>
+                    <textarea
+                      value={structured.education}
+                      onChange={(e) =>
+                        setStructured({ ...structured, education: e.target.value })
+                      }
+                      className="w-60 px-2 py-1.5 border border-gray-300 rounded-md bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={2}
+                      placeholder="无"
+                    />
+                  </div>
+
+                  {/* Context preview */}
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-blue-600 hover:text-blue-800 font-medium">
+                      预览注入的上下文
+                    </summary>
+                    <div className="mt-2 p-3 bg-white/80 rounded border border-gray-200 max-h-64 overflow-y-auto whitespace-pre-wrap text-gray-700 text-xs leading-relaxed">
+                      <p className="text-gray-400 mb-2">以下内容将被注入到 AI 的 system prompt 中：</p>
+                      <p className="font-semibold">## 候选人背景信息</p>
+                      <p className="text-gray-400">优先级：题目本身 &gt; 候选人自身情况 &gt;= 岗位JD &gt; 公司业务</p>
+                      {priority.selfInfo > 0 && (structured.techStack.length > 0 || structured.workExperience || structured.internshipExperience || structured.projectExperience || structured.education) && (
+                        <>
+                          <p className="mt-1"><strong>### 候选人简历（重要程度：{priority.selfInfo}/100）</strong></p>
+                          {structured.techStack.length > 0 && (
+                            <p><strong>技术栈</strong>：{structured.techStack.join('、')}</p>
+                          )}
+                          {structured.workExperience && (
+                            <p className="mt-1"><strong>工作经历</strong>：{structured.workExperience}</p>
+                          )}
+                          {structured.internshipExperience && (
+                            <p className="mt-1"><strong>实习经历</strong>：{structured.internshipExperience}</p>
+                          )}
+                          {structured.projectExperience && (
+                            <p className="mt-1"><strong>项目经验</strong>：{structured.projectExperience}</p>
+                          )}
+                          {structured.education && (
+                            <p className="mt-1"><strong>教育背景</strong>：{structured.education}</p>
+                          )}
+                        </>
+                      )}
+                      {priority.jd > 0 && jd && (
+                        <p className="mt-1"><strong>### 目标岗位 JD（重要程度：{priority.jd}/100）</strong><br />{jd}</p>
+                      )}
+                      {priority.companyBusiness > 0 && companyInfo && (
+                        <p className="mt-1"><strong>### 目标公司调研（重要程度：{priority.companyBusiness}/100）</strong><br />{companyInfo}</p>
+                      )}
+                    </div>
+                  </details>
+                </div>
+              )}
+
+              {/* JD Input */}
+              <div className="flex items-start justify-between">
+                <label className="text-sm font-medium pt-1">
+                  目标岗位 JD
+                  <span className="ml-2 text-xs font-light block mt-0.5">
+                    可选，填写投递岗位的职位描述
+                  </span>
+                </label>
+                <div className="w-60">
+                  <Textarea
+                    value={jd}
+                    onChange={(e) => setJd(e.target.value)}
+                    placeholder="如：负责公司核心业务系统的架构设计与开发..."
+                    className="w-full min-h-16 bg-white text-xs"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              {/* Company Search */}
+              <div className="flex items-start justify-between">
+                <label className="text-sm font-medium pt-1">
+                  公司调研
+                  <span className="ml-2 text-xs font-light block mt-0.5">
+                    输入目标公司名称，AI 搜索公司背景信息
+                  </span>
+                </label>
+                <div className="w-60 space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="如：字节跳动"
+                    />
+                    <Button
+                      variant="default"
+                      size="sm"
+                      disabled={isSearching || !companyName.trim()}
+                      onClick={async () => {
+                        setIsSearching(true)
+                        setErrorMessage(null)
+                        try {
+                          const info = await window.api.searchCompanyInfo(companyName)
+                          setCompanyInfo(info)
+                        } catch (err) {
+                          setErrorMessage(err instanceof Error ? err.message : '搜索失败')
+                        } finally {
+                          setIsSearching(false)
+                        }
+                      }}
+                    >
+                      {isSearching ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  {companyInfo && (
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
+                        查看调研结果（{companyInfo.length} 字符）
+                      </summary>
+                      <div className="mt-1 p-2 bg-white/80 rounded border border-gray-200 max-h-48 overflow-y-auto whitespace-pre-wrap text-gray-700">
+                        {companyInfo}
+                      </div>
+                    </details>
+                  )}
+                </div>
+              </div>
+
+              {/* Priority Sliders */}
+              <div className="pt-2 border-t border-gray-400/20 space-y-3">
+                <label className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                  背景信息权重
+                  <span className="text-xs font-light">调整各项背景信息在 AI 回答中的重要程度</span>
+                </label>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-xs">题目信息</span>
+                  <div className="w-60 flex items-center gap-2">
+                    <span className="text-xs w-8 text-right font-semibold text-gray-500">固定</span>
+                    <span className="text-xs text-gray-400">最高优先级</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-xs">候选人信息</span>
+                  <div className="w-60 flex items-center gap-2">
+                    <Slider
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={[priority.selfInfo]}
+                      onValueChange={([v]) => setPriority('selfInfo', v)}
+                    />
+                    <span className="text-xs w-8 text-right">{priority.selfInfo}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-xs">岗位 JD</span>
+                  <div className="w-60 flex items-center gap-2">
+                    <Slider
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={[priority.jd]}
+                      onValueChange={([v]) => setPriority('jd', v)}
+                    />
+                    <span className="text-xs w-8 text-right">{priority.jd}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-xs">公司调研</span>
+                  <div className="w-60 flex items-center gap-2">
+                    <Slider
+                      min={0}
+                      max={100}
+                      step={5}
+                      value={[priority.companyBusiness]}
+                      onValueChange={([v]) => setPriority('companyBusiness', v)}
+                    />
+                    <span className="text-xs w-8 text-right">{priority.companyBusiness}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Error */}
+              {resumeError && (
+                <div className="text-xs text-red-600 bg-red-50 rounded p-2">{resumeError}</div>
+              )}
+
+              {/* Clear */}
+              {(rawText || structured) && (
+                <div className="pt-2 border-t border-gray-400/20">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-red-500 h-7"
+                    onClick={clearResume}
+                  >
+                    清除简历数据
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Transcription Settings */}
         <div className="bg-gray-300/80 rounded-lg p-6">
           <h2 className="text-lg font-semibold mb-4 flex items-center">
@@ -615,6 +1035,25 @@ export default function SettingsPage() {
                 checked={ttsEnabled}
                 onCheckedChange={(checked) => updateSetting('ttsEnabled', checked)}
               />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">
+                语音回答字数上限
+                <span className="ml-2 text-xs font-light">
+                  数值越小回答越快，推荐 200-500 字
+                </span>
+              </label>
+              <div className="w-60 flex items-center gap-2">
+                <Slider
+                  min={100}
+                  max={1000}
+                  step={50}
+                  value={[voiceWordLimit]}
+                  onValueChange={([v]) => updateSetting('voiceWordLimit', v)}
+                />
+                <span className="text-xs w-10 text-right">{voiceWordLimit}</span>
+              </div>
             </div>
           </div>
         </div>

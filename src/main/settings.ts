@@ -51,7 +51,8 @@ export const settings = {
   visionApiBaseURL: '',
   visionApiKey: '',
   visionModel: '',
-  responseMode: 'core-code' as 'core-code' | 'acm' | 'custom'
+  responseMode: 'core-code' as 'core-code' | 'acm' | 'custom',
+  voiceWordLimit: 500
 }
 
 export type AppSettings = typeof settings

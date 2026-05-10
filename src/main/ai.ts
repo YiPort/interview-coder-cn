@@ -4,6 +4,7 @@ import { ipcMain, dialog } from 'electron'
 import { streamText, type ModelMessage } from 'ai'
 import { createOpenAI } from '@ai-sdk/openai'
 import { settings, AppSettings } from './settings'
+import { resumeData } from './resume'
 
 export const PROMPT_SYSTEM = readFileSync(join(import.meta.dirname, 'prompts.md'), 'utf-8').trim()
 
@@ -41,7 +42,7 @@ function getModel(_settings: AppSettings, needsVision = false) {
   return userModel || fallbackModel
 }
 
-function getVisionProvider() {
+export function getVisionProvider() {
   if (settings.useSeparateVisionModel && settings.visionApiBaseURL && settings.visionApiKey) {
     return {
       baseURL: settings.visionApiBaseURL,
@@ -167,12 +168,56 @@ const MODE_PROMPTS: Record<string, string> = {
     '- 代码格式整洁，正确缩进，每行只写一条语句'
 }
 
+function buildResumeContextSection(): string {
+  if (!resumeData.enabled || !resumeData.structured) return ''
+
+  const p = resumeData.priority
+  const s = resumeData.structured
+
+  let section = '\n\n## 候选人背景信息\n\n'
+  section += '以下为候选人的背景资料，请根据题目实际需要选择性引用。\n'
+  section += '优先级排序：题目本身 > 候选人自身情况 >= 岗位JD > 公司业务。\n\n'
+
+  if (p.selfInfo > 0 && (s.techStack.length > 0 || s.workExperience || s.internshipExperience || s.projectExperience || s.education)) {
+    section += `### 候选人简历（重要程度：${p.selfInfo}/100）\n\n`
+    if (s.techStack.length > 0) {
+      section += `**技术栈**：${s.techStack.join('、')}\n\n`
+    }
+    if (s.workExperience) {
+      section += `**工作经历**：\n${s.workExperience}\n\n`
+    }
+    if (s.internshipExperience) {
+      section += `**实习经历**：\n${s.internshipExperience}\n\n`
+    }
+    if (s.projectExperience) {
+      section += `**项目经验**：\n${s.projectExperience}\n\n`
+    }
+    if (s.education) {
+      section += `**教育背景**：\n${s.education}\n\n`
+    }
+  }
+
+  if (p.jd > 0 && resumeData.jd) {
+    section += `### 目标岗位 JD（重要程度：${p.jd}/100）\n\n${resumeData.jd}\n\n`
+  }
+
+  if (p.companyBusiness > 0 && resumeData.companyInfo) {
+    section += `### 目标公司调研（重要程度：${p.companyBusiness}/100）\n\n${resumeData.companyInfo}\n\n`
+  }
+
+  return section
+}
+
 function getSystemPrompt(): string {
   // Custom prompt from settings takes full priority
   if (settings.customPrompt) return settings.customPrompt
+
   // Mode-specific prompt replaces the default PROMPT_SYSTEM for code modes
   if (settings.responseMode === 'core-code' || settings.responseMode === 'acm') {
-    return MODE_PROMPTS[settings.responseMode] + `\n使用编程语言：${settings.codeLanguage} 解答。`
+    return (
+      MODE_PROMPTS[settings.responseMode] +
+      `\n使用编程语言：${settings.codeLanguage} 解答。`
+    )
   }
   return PROMPT_SYSTEM + `\n使用编程语言：${settings.codeLanguage} 解答。`
 }
@@ -262,18 +307,36 @@ export function getAlternativeSolutionStream(
   return textStream
 }
 
+const VOICE_SYSTEM_PROMPT = `你是一个专业的面试助手，正在帮助候选人进行面试。你的任务是根据候选人的背景信息，辅助回答面试官的问题。
+
+## 回答要求
+
+- 使用中文，口语化表达，便于语音朗读；
+- 根据问题复杂度动态调整回答长度：简单问题简明扼要，复杂问题详细展开；
+- 根据候选人的简历背景，给出针对性的回答建议；
+- 如果问题涉及候选人经历，优先引用其简历中的真实经历；
+- 如果问题涉及技术，结合候选人的技术栈给出回答思路；
+- 如果候选人的背景不足以回答某个问题，诚实指出并给出通用的回答框架；
+- 不要输出代码块，不要长篇大论；
+- 像真正的面试伙伴一样，给出可以直接说出口的回答。`
+
 export function getVoiceStream(messages: ModelMessage[], abortSignal?: AbortSignal) {
   const openai = createOpenAI({
     baseURL: settings.apiBaseURL,
     apiKey: settings.apiKey
   })
 
+  const resumeContext = buildResumeContextSection()
+  const wordLimit = settings.voiceWordLimit || 500
+  const systemPrompt =
+    settings.customPrompt ||
+    VOICE_SYSTEM_PROMPT +
+      `\n- 回答不超过 ${wordLimit} 字；` +
+      resumeContext
+
   const { textStream } = streamText({
     model: openai.chat(getModel(settings)),
-    system:
-      settings.customPrompt ||
-      PROMPT_SYSTEM +
-        `\n使用编程语言：${settings.codeLanguage} 解答。\n\n你是一个语音面试助手。请用口语化、简洁的方式回答问题，便于语音朗读。`,
+    system: systemPrompt,
     messages,
     abortSignal,
     onError: (err) => {

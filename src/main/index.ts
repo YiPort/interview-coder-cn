@@ -32,6 +32,7 @@ import './shortcuts'
 import './transcription'
 import './tts'
 import './recorder'
+import './resume'
 import { createWindow } from './main-window'
 import { initAutoUpdater } from './auto-updater'
 
