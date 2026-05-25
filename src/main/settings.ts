@@ -36,6 +36,7 @@ export const settings = {
   model: process.env.MODEL || '',
   codeLanguage: process.env.CODE_LANGUAGE || 'typescript',
   customPrompt: '',
+  codeIdeaPrompt: '',
   screenshotAutoSave: false,
   screenshotDir: '',
   dashscopeApiKey: '',

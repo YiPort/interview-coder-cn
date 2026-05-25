@@ -15,6 +15,7 @@ export function AppContent() {
     setScreenshotData,
     setIsLoading,
     addSolutionChunk,
+    trimSolutionEnd,
     setErrorMessage,
     clearSolution
   } = useSolutionStore()
@@ -83,9 +84,11 @@ export function AppContent() {
 
   useEffect(() => {
     window.api.onSolutionComplete(() => {
+      trimSolutionEnd()
       setIsLoading(false)
     })
     window.api.onSolutionStopped(() => {
+      trimSolutionEnd()
       setIsLoading(false)
     })
     window.api.onSolutionError((message: string) => {
@@ -97,7 +100,7 @@ export function AppContent() {
       window.api.removeSolutionStoppedListener()
       window.api.removeSolutionErrorListener()
     }
-  }, [setIsLoading, setErrorMessage])
+  }, [setIsLoading, setErrorMessage, trimSolutionEnd])
 
   useEffect(() => {
     window.api.onScrollPageUp(() => {

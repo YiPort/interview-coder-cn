@@ -8,6 +8,7 @@ interface Settings {
   model: string
   customModels: string[]
   customPrompt: string
+  codeIdeaPrompt: string
 
   opacity: number
   codeLanguage: string
@@ -45,6 +46,7 @@ const defaultSettings: Settings = {
   model: '',
   customModels: [],
   customPrompt: '',
+  codeIdeaPrompt: '',
   codeLanguage: '',
 
   opacity: 0.8,

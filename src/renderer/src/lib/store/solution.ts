@@ -11,6 +11,7 @@ interface SolutionStore extends SolutionState {
   setIsLoading: (isReceiving: boolean) => void
   addSolutionChunk: (chunk: string) => void
   setSolutionChunks: (chunks: string[]) => void
+  trimSolutionEnd: () => void
   setScreenshotData: (data: string | null) => void
   setErrorMessage: (message: string | null) => void
   clearSolution: () => void
@@ -36,6 +37,12 @@ export const useSolutionStore = create<SolutionStore>()((set) => ({
   },
   setSolutionChunks: (chunks) => {
     set({ solutionChunks: chunks })
+  },
+  trimSolutionEnd: () => {
+    set((state) => {
+      const text = state.solutionChunks.join('').replace(/[ \t\r\n]+$/g, '')
+      return { solutionChunks: text ? [text] : [] }
+    })
   },
   setScreenshotData: (data) => {
     set({ screenshotData: data })

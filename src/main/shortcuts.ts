@@ -701,7 +701,7 @@ const callbacks: Record<string, () => void> = {
 
   // Request code idea / implementation approach for the current problem
   codeIdea: async () => {
-    await executeFollowUp('请输出这道题的代码思路。', 'code-idea')
+    await executeFollowUp('请输出这道题的解题思路，讲清楚实现步骤以及为什么这样做。', 'code-idea')
   },
 
   ignoreOrEnableMouse: () => {

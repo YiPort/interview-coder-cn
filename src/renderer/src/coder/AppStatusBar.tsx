@@ -115,6 +115,20 @@ export function AppStatusBar() {
               />
               新开对话
             </span>
+            <span>
+              <ShortcutRenderer
+                shortcut={shortcuts.codeIdea.key}
+                className="inline-block scale-75 text-xs border border-current bg-transparent py-0 px-1"
+              />
+              解题思路
+            </span>
+            <span>
+              <ShortcutRenderer
+                shortcut={shortcuts.alternativeSolution.key}
+                className="inline-block scale-75 text-xs border border-current bg-transparent py-0 px-1"
+              />
+              换个解法
+            </span>
           </div>
         ) : null}
       </div>

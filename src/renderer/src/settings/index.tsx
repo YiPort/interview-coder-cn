@@ -40,6 +40,7 @@ export default function SettingsPage() {
     apiKey,
     model,
     customPrompt,
+    codeIdeaPrompt,
     screenshotAutoSave,
     screenshotDir,
     dashscopeApiKey,
@@ -918,7 +919,7 @@ export default function SettingsPage() {
                     <span className="text-xs text-gray-400 ml-1">（电脑声音）</span>
                   </label>
                   <p className="text-xs text-gray-400 ml-5 mb-2">
-                    需先在 Windows 中启用"立体声混音"设备（详见 README），然后在下拉列表中选择该设备
+                    需先在 Windows 中启用“立体声混音”设备（详见 README），然后在下拉列表中选择该设备
                   </p>
                   {audioDevices.length > 0 && (
                     <select
@@ -1169,6 +1170,27 @@ export default function SettingsPage() {
                 />
               </div>
             )}
+
+            <div className="pt-4 border-t border-gray-400/30 space-y-2">
+              <label className="text-sm font-medium">
+                解题思路提示词
+                <span className="ml-2 text-xs font-light">
+                  按下“解题思路”快捷键时使用；留空则使用默认提示词
+                </span>
+              </label>
+              <Textarea
+                value={codeIdeaPrompt}
+                onChange={(e) => updateSetting('codeIdeaPrompt', e.target.value)}
+                placeholder={
+                  '默认要求：像面试口述一样说明为什么用这个方法、代码实现步骤、关键变量、边界情况和复杂度；不输出完整代码，并尽量一屏读完。'
+                }
+                className="w-full min-h-24 bg-white"
+                rows={4}
+              />
+              <p className="text-xs text-gray-500">
+                建议写清楚你想看的结构，例如：“先讲方法和原因，再按代码执行顺序讲步骤，最后说边界和复杂度”。
+              </p>
+            </div>
           </div>
         </div>
 

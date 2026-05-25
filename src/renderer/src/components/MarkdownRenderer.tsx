@@ -62,7 +62,7 @@ const components: Components = {
 
 export default function MarkdownRenderer({ children }: { children: string }) {
   return (
-    <div className="prose prose-sm prose-invert max-w-none prose-pre:p-0 prose-code:text-xs">
+    <div className="prose prose-sm prose-invert max-w-none text-xs leading-snug prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-1 prose-blockquote:my-1 prose-pre:my-1 prose-pre:p-0 prose-code:text-xs">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight]}

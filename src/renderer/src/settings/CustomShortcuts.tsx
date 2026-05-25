@@ -100,8 +100,8 @@ export function CustomShortcuts() {
             shortcut="alternativeSolution"
           />
           <Shortcut
-            label="输出代码思路"
-            description="基于当前题目输出核心算法、实现流程和复杂度，不重新截图"
+            label="输出解题思路"
+            description="基于当前题目输出适合面试口述的思路、步骤、边界和复杂度"
             shortcut="codeIdea"
           />
           <Shortcut

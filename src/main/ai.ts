@@ -307,15 +307,24 @@ export function getAlternativeSolutionStream(
   return textStream
 }
 
-const CODE_IDEA_SYSTEM_PROMPT = `你是一个编程面试辅助工具。你的任务是基于已有题目上下文，输出“代码思路”而不是完整答案代码。
+const DEFAULT_CODE_IDEA_PROMPT = `你是一个编程面试辅助工具。你的任务是基于已有题目上下文，输出候选人可以直接讲给面试官听的“解题思路”，不是完整代码。
 
 ## 输出要求
 
-- 使用中文，表达简洁，适合面试时快速理解和复述；
-- 只输出解题/代码实现思路，不要输出完整代码；
-- 不要输出内部推理链、隐藏思考过程或长篇推导；
-- 优先说明核心算法、关键数据结构、主要流程、边界情况和复杂度；
-- 如果之前已经给过代码，请结合现有方案提炼实现思路，不要重新生成代码。`
+- 使用中文，表达清楚自然，不要堆关键词，也不要写成长篇文章；
+- 总长度控制在 5～7 行、400 字以内，尽量一屏读完；
+- 不要输出完整代码、代码块、内部推理链、隐藏思考过程；
+- 必须讲清楚三件事：为什么用这个方法、代码按什么步骤实现、有哪些边界和复杂度；
+- 推荐输出顺序：
+  1. 先用 1 句话概括核心方法，并说明为什么这样能解决问题；
+  2. 再用 2～4 句话按代码执行顺序描述实现步骤，说明关键变量/数据结构的作用；
+  3. 最后补充容易漏的边界情况和时间/空间复杂度；
+- 如果之前已经给过代码，请基于已有代码提炼可复述的思路，不要重新生成代码。`
+
+function getCodeIdeaSystemPrompt(): string {
+  const prompt = settings.codeIdeaPrompt?.trim() || DEFAULT_CODE_IDEA_PROMPT
+  return prompt + `\n使用编程语言：${settings.codeLanguage} 说明。`
+}
 
 export function getCodeIdeaStream(messages: ModelMessage[], abortSignal?: AbortSignal) {
   const { baseURL, apiKey, model } = getSolvingProvider()
@@ -329,7 +338,7 @@ export function getCodeIdeaStream(messages: ModelMessage[], abortSignal?: AbortS
         {
           type: 'text',
           text:
-            '请输出这道题的代码思路。包括：核心算法、关键变量/数据结构、主要实现流程、边界情况、时间和空间复杂度。不要输出完整代码。'
+            '请输出这道题的面试讲述版解题思路：讲清楚为什么用这个方法、代码实现步骤、关键变量、边界情况和复杂度。不要输出完整代码。'
         }
       ]
     }
@@ -337,7 +346,7 @@ export function getCodeIdeaStream(messages: ModelMessage[], abortSignal?: AbortS
 
   const { textStream } = streamText({
     model: openai.chat(model),
-    system: CODE_IDEA_SYSTEM_PROMPT + `\n使用编程语言：${settings.codeLanguage} 说明。`,
+    system: getCodeIdeaSystemPrompt(),
     messages: updatedMessages,
     abortSignal,
     onError: (err) => {
