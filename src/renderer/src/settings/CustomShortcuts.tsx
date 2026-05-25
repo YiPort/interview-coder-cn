@@ -100,6 +100,11 @@ export function CustomShortcuts() {
             shortcut="alternativeSolution"
           />
           <Shortcut
+            label="输出代码思路"
+            description="基于当前题目输出核心算法、实现流程和复杂度，不重新截图"
+            shortcut="codeIdea"
+          />
+          <Shortcut
             label="停止生成"
             description="打断当前正在生成的解题建议"
             shortcut="stopSolutionStream"

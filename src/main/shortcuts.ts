@@ -4,7 +4,15 @@ import type { ModelMessage } from 'ai'
 import { applyContentProtection } from './main-window'
 import { takeScreenshot } from './take-screenshot'
 import { saveScreenshotToDisk } from './save-screenshot'
-import { getSolutionStream, getFollowUpStream, getGeneralStream, getVoiceStream, getAlternativeSolutionStream, buildScreenshotMessages } from './ai'
+import {
+  getSolutionStream,
+  getFollowUpStream,
+  getGeneralStream,
+  getVoiceStream,
+  getAlternativeSolutionStream,
+  getCodeIdeaStream,
+  buildScreenshotMessages
+} from './ai'
 import { state } from './state'
 import { settings } from './settings'
 import { getTranscriptionText, clearTranscriptionText } from './transcription'
@@ -237,8 +245,8 @@ function createThinkingFilter() {
       // Strip all complete  think... response blocks
       buffer = buffer.replace(/<think>[\s\S]*?<\/think>/g, '')
 
-      // Check for an unclosed  think tag (might be split across chunks)
-      const openIdx = buffer.indexOf('')
+      // Check for an unclosed <think> tag (might be split across chunks)
+      const openIdx = buffer.indexOf('<think>')
       if (openIdx === -1) {
         // No open think tag, safe to emit everything immediately
         const result = buffer
@@ -246,7 +254,7 @@ function createThinkingFilter() {
         return result
       }
 
-      // Unclosed  think tag — emit everything before it, hold the rest
+      // Unclosed <think> tag — emit everything before it, hold the rest
       const result = buffer.slice(0, openIdx)
       buffer = buffer.slice(openIdx)
       return result
@@ -268,9 +276,11 @@ function createThinkingFilter() {
  * Execute a follow-up question within the current conversation.
  * Used by both the follow-up IPC handler and the alternative-solution shortcut.
  */
+type FollowUpMode = 'default' | 'alternative-solution' | 'code-idea'
+
 async function executeFollowUp(
   question: string,
-  alternativeSolution = false
+  mode: FollowUpMode = 'default'
 ): Promise<{ success: boolean; error?: string }> {
   const mainWindow = global.mainWindow
   if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage || !settings.apiKey) {
@@ -297,9 +307,12 @@ async function executeFollowUp(
   const thinkingFilter2 = createThinkingFilter()
 
   try {
-    const followUpStream = alternativeSolution
-      ? getAlternativeSolutionStream(conversationMessages, streamContext.controller.signal)
-      : getFollowUpStream(conversationMessages, question, streamContext.controller.signal)
+    const followUpStream =
+      mode === 'alternative-solution'
+        ? getAlternativeSolutionStream(conversationMessages, streamContext.controller.signal)
+        : mode === 'code-idea'
+          ? getCodeIdeaStream(conversationMessages, streamContext.controller.signal)
+          : getFollowUpStream(conversationMessages, question, streamContext.controller.signal)
     streamStarted = true
 
     try {
@@ -683,7 +696,12 @@ const callbacks: Record<string, () => void> = {
 
   // Request an alternative solution for the current problem
   alternativeSolution: async () => {
-    await executeFollowUp('请给出另一种不同的解法。', true)
+    await executeFollowUp('请给出另一种不同的解法。', 'alternative-solution')
+  },
+
+  // Request code idea / implementation approach for the current problem
+  codeIdea: async () => {
+    await executeFollowUp('请输出这道题的代码思路。', 'code-idea')
   },
 
   ignoreOrEnableMouse: () => {

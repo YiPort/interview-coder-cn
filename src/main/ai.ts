@@ -307,6 +307,46 @@ export function getAlternativeSolutionStream(
   return textStream
 }
 
+const CODE_IDEA_SYSTEM_PROMPT = `你是一个编程面试辅助工具。你的任务是基于已有题目上下文，输出“代码思路”而不是完整答案代码。
+
+## 输出要求
+
+- 使用中文，表达简洁，适合面试时快速理解和复述；
+- 只输出解题/代码实现思路，不要输出完整代码；
+- 不要输出内部推理链、隐藏思考过程或长篇推导；
+- 优先说明核心算法、关键数据结构、主要流程、边界情况和复杂度；
+- 如果之前已经给过代码，请结合现有方案提炼实现思路，不要重新生成代码。`
+
+export function getCodeIdeaStream(messages: ModelMessage[], abortSignal?: AbortSignal) {
+  const { baseURL, apiKey, model } = getSolvingProvider()
+  const openai = createOpenAI({ baseURL, apiKey })
+
+  const updatedMessages: ModelMessage[] = [
+    ...messages,
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text:
+            '请输出这道题的代码思路。包括：核心算法、关键变量/数据结构、主要实现流程、边界情况、时间和空间复杂度。不要输出完整代码。'
+        }
+      ]
+    }
+  ]
+
+  const { textStream } = streamText({
+    model: openai.chat(model),
+    system: CODE_IDEA_SYSTEM_PROMPT + `\n使用编程语言：${settings.codeLanguage} 说明。`,
+    messages: updatedMessages,
+    abortSignal,
+    onError: (err) => {
+      throw err.error ?? err
+    }
+  })
+  return textStream
+}
+
 const VOICE_SYSTEM_PROMPT = `你是一个专业的面试助手，正在帮助候选人进行面试。你的任务是根据候选人的背景信息，辅助回答面试官的问题。
 
 ## 回答要求
@@ -380,7 +420,8 @@ async function testConnection(
       messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }]
     })
     // Consume the stream to ensure connection succeeded
-    for await (const _ of result.textStream) {
+    for await (const chunk of result.textStream) {
+      void chunk
       break
     }
     const latencyMs = Date.now() - start

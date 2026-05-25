@@ -59,6 +59,7 @@ const getShortcutDescription = (action: string) => {
     ignoreOrEnableMouse: '鼠标穿透(窗口对鼠标隐身)',
     takeScreenshot: '截图并生成解题建议（会新开对话）',
     appendScreenshot: '追加截图并生成解题建议',
+    codeIdea: '输出代码思路',
     stopSolutionStream: '停止生成',
     toggleTranscription: '开始/暂停实时语音转录',
     clearTranscription: '清除转录文本（不提交给AI）',
