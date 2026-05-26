@@ -25,6 +25,25 @@ const defaultState: SolutionState = {
   errorMessage: null
 }
 
+function cleanCodeBlock(code: string): string {
+  return code
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line.replace(/[ \t]+$/g, ''))
+    .join('\n')
+    .replace(/\n{2,}/g, '\n')
+    .replace(/[ \t\n]+$/g, '')
+}
+
+function cleanMarkdownCodeBlocks(markdown: string): string {
+  return markdown
+    .replace(/```([^\n`]*)\n([\s\S]*?)```/g, (_match, language: string, code: string) => {
+      return `\`\`\`${language}\n${cleanCodeBlock(code)}\n\`\`\``
+    })
+    .replace(/[ \t]+$/gm, '')
+    .replace(/[ \t\r\n]+$/g, '')
+}
+
 export const useSolutionStore = create<SolutionStore>()((set) => ({
   ...defaultState,
   setIsLoading: (isReceiving) => {
@@ -40,7 +59,7 @@ export const useSolutionStore = create<SolutionStore>()((set) => ({
   },
   trimSolutionEnd: () => {
     set((state) => {
-      const text = state.solutionChunks.join('').replace(/[ \t\r\n]+$/g, '')
+      const text = cleanMarkdownCodeBlocks(state.solutionChunks.join(''))
       return { solutionChunks: text ? [text] : [] }
     })
   },
