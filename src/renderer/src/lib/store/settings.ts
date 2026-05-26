@@ -57,7 +57,7 @@ const defaultSettings: Settings = {
   dashscopeApiKey: '',
 
   ttsProvider: 'web-speech' as const,
-  ttsEnabled: true,
+  ttsEnabled: false,
   audioSource: 'system' as const,
   systemAudioDeviceId: '',
   micDeviceId: '',

@@ -41,7 +41,7 @@ export const settings = {
   screenshotDir: '',
   dashscopeApiKey: '',
   ttsProvider: 'web-speech' as 'web-speech' | 'dashscope',
-  ttsEnabled: true,
+  ttsEnabled: false,
   audioSource: 'system' as 'system' | 'microphone',
   systemAudioDeviceId: '',
   micDeviceId: '',
