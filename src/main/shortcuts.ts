@@ -704,6 +704,12 @@ const callbacks: Record<string, () => void> = {
     await executeFollowUp('请输出这道题的解题思路，讲清楚实现步骤以及为什么这样做。', 'code-idea')
   },
 
+  toggleResponseMode: () => {
+    const mainWindow = global.mainWindow
+    if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage) return
+    mainWindow.webContents.send('toggle-response-mode')
+  },
+
   ignoreOrEnableMouse: () => {
     const mainWindow = global.mainWindow
     if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage) return
@@ -721,6 +727,18 @@ const callbacks: Record<string, () => void> = {
     const mainWindow = global.mainWindow
     if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage) return
     mainWindow.webContents.send('scroll-page-down')
+  },
+
+  contentScrollUp: () => {
+    const mainWindow = global.mainWindow
+    if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage) return
+    mainWindow.webContents.send('scroll-content-up')
+  },
+
+  contentScrollDown: () => {
+    const mainWindow = global.mainWindow
+    if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage) return
+    mainWindow.webContents.send('scroll-content-down')
   },
 
   moveMainWindowUp: () => {

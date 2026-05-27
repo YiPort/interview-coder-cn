@@ -1,9 +1,18 @@
 import type { Components } from 'react-markdown'
 import type { ReactNode } from 'react'
+import hljs from 'highlight.js/lib/common'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import 'highlight.js/styles/github-dark.css'
+
+const languageAliases: Record<string, string> = {
+  js: 'javascript',
+  ts: 'typescript',
+  py: 'python',
+  cplusplus: 'cpp',
+  'c++': 'cpp'
+}
 
 function extractTextContent(node: ReactNode): string {
   if (typeof node === 'string') return node
@@ -15,12 +24,41 @@ function extractTextContent(node: ReactNode): string {
   return ''
 }
 
+function cleanCodeText(text: string): string {
+  return text
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line.replace(/[ \t]+$/g, ''))
+    .join('\n')
+    .replace(/[ \t\n]+$/g, '')
+}
+
+function normalizeLanguage(language: string) {
+  const normalized = language.toLowerCase()
+  return languageAliases[normalized] || normalized
+}
+
+function getHighlightedHtml(text: string, language?: string) {
+  if (!language) return null
+  const normalizedLanguage = normalizeLanguage(language)
+  if (!hljs.getLanguage(normalizedLanguage)) return null
+  return hljs.highlight(text, { language: normalizedLanguage, ignoreIllegals: true }).value
+}
+
 const components: Components = {
   pre({ children }) {
-    return <pre className="!bg-[#0d1117] !p-0 !m-0">{children}</pre>
+    return (
+      <pre
+        data-code-scroll-container="true"
+        className="!bg-[#0d1117] !p-0 !m-0 max-h-[70vh] overflow-auto"
+      >
+        {children}
+      </pre>
+    )
   },
   code({ className, children, ...props }) {
-    const match = /language-(\w+)/.exec(className || '')
+    const match = /language-([^\s]+)/.exec(className || '')
+    const language = match?.[1]
     const isInline = !match && typeof children === 'string' && !children.includes('\n')
 
     if (isInline) {
@@ -31,30 +69,38 @@ const components: Components = {
       )
     }
 
-    const textContent = extractTextContent(children)
-    const lines = textContent.split('\n')
-    if (lines.length > 0 && lines[lines.length - 1] === '') lines.pop()
+    const textContent = cleanCodeText(extractTextContent(children))
+    const lines = textContent ? textContent.split('\n') : ['']
     const lineCount = lines.length || 1
     const digits = String(lineCount).length
+    const highlightedHtml = getHighlightedHtml(textContent, language)
 
     return (
-      <div className="flex text-xs leading-5">
-        <span
-          className="shrink-0 select-none text-right text-gray-500 border-r border-gray-700 py-3 pr-3 pl-4 bg-[#0d1117]"
-          style={{ minWidth: `${digits + 2}ch` }}
-        >
-          {Array.from({ length: lineCount }, (_, i) => (
-            <span key={i} className="block">
-              {i + 1}
-            </span>
-          ))}
-        </span>
-        <code
-          className={`flex-1 !p-3 !bg-[#0d1117] whitespace-pre-wrap break-words ${className || ''}`}
-          {...props}
-        >
-          {children}
-        </code>
+      <div className="relative">
+        {language && (
+          <span className="absolute right-2 top-1 z-10 rounded bg-gray-800/90 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-gray-400">
+            {language}
+          </span>
+        )}
+        <div className="flex text-[11px] leading-4">
+          <span
+            className="shrink-0 select-none text-right text-gray-500 border-r border-gray-700 py-2 pr-3 pl-4 bg-[#0d1117]"
+            style={{ minWidth: `${digits + 2}ch` }}
+          >
+            {Array.from({ length: lineCount }, (_, i) => (
+              <span key={i} className="block">
+                {i + 1}
+              </span>
+            ))}
+          </span>
+          <code
+            className={`flex-1 !p-2 !bg-[#0d1117] whitespace-pre-wrap break-words ${className || ''}`}
+            {...props}
+            {...(highlightedHtml
+              ? { dangerouslySetInnerHTML: { __html: highlightedHtml } }
+              : { children: textContent })}
+          />
+        </div>
       </div>
     )
   }

@@ -105,6 +105,11 @@ export function CustomShortcuts() {
             shortcut="codeIdea"
           />
           <Shortcut
+            label="切换回答模式"
+            description="在核心代码、ACM、自定义提示词之间切换；未填写自定义提示词时会跳过自定义模式"
+            shortcut="toggleResponseMode"
+          />
+          <Shortcut
             label="停止生成"
             description="打断当前正在生成的解题建议"
             shortcut="stopSolutionStream"
@@ -162,6 +167,16 @@ export function CustomShortcuts() {
           <h3 className="text-sm text-gray-500">页面导航</h3>
           <Shortcut label="向上翻页" shortcut="pageUp" />
           <Shortcut label="向下翻页" shortcut="pageDown" />
+          <Shortcut
+            label="内容框向上滚动"
+            description="滚动当前可见的代码块/Markdown 内容框，适合鼠标穿透时查看长代码"
+            shortcut="contentScrollUp"
+          />
+          <Shortcut
+            label="内容框向下滚动"
+            description="滚动当前可见的代码块/Markdown 内容框，适合鼠标穿透时查看长代码"
+            shortcut="contentScrollDown"
+          />
         </div>
 
         {/* Window Movement */}

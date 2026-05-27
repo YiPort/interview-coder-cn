@@ -214,8 +214,11 @@ function buildResumeContextSection(): string {
 }
 
 function getSystemPrompt(): string {
-  // Custom prompt from settings takes full priority
-  if (settings.customPrompt) return settings.customPrompt
+  const customPrompt = settings.customPrompt?.trim()
+
+  if (settings.responseMode === 'custom') {
+    return customPrompt || PROMPT_SYSTEM + `\n使用编程语言：${settings.codeLanguage} 解答。`
+  }
 
   // Mode-specific prompt replaces the default PROMPT_SYSTEM for code modes
   if (settings.responseMode === 'core-code' || settings.responseMode === 'acm') {

@@ -114,6 +114,22 @@ const api = {
     ipcRenderer.removeAllListeners('scroll-page-down')
   },
 
+  // Listen for inner content/code block scroll up
+  onScrollContentUp: (callback: () => void) => {
+    ipcRenderer.on('scroll-content-up', callback)
+  },
+  removeScrollContentUpListener: () => {
+    ipcRenderer.removeAllListeners('scroll-content-up')
+  },
+
+  // Listen for inner content/code block scroll down
+  onScrollContentDown: (callback: () => void) => {
+    ipcRenderer.on('scroll-content-down', callback)
+  },
+  removeScrollContentDownListener: () => {
+    ipcRenderer.removeAllListeners('scroll-content-down')
+  },
+
   // AI loading events
   onAiLoadingStart: (callback: () => void) => {
     ipcRenderer.on('ai-loading-start', callback)
@@ -220,6 +236,12 @@ const api = {
   },
   removeToggleTTSListener: () => {
     ipcRenderer.removeAllListeners('toggle-tts')
+  },
+  onToggleResponseMode: (callback: () => void) => {
+    ipcRenderer.on('toggle-response-mode', callback)
+  },
+  removeToggleResponseModeListener: () => {
+    ipcRenderer.removeAllListeners('toggle-response-mode')
   },
 
   // TTS speak text (clean AI response only, no user messages)

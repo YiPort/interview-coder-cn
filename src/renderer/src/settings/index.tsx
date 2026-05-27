@@ -1142,7 +1142,7 @@ export default function SettingsPage() {
                     <span className="text-sm font-medium">自定义提示词</span>
                   </label>
                   <p className="text-xs text-gray-400 ml-5 mt-1">
-                    自由编写提示词，适用于非编程类场景或微调回答风格
+                    自由编写提示词，适用于非编程类场景或微调回答风格；未填写时快捷键会跳过该模式
                   </p>
                 </div>
               </div>

@@ -6,6 +6,42 @@ import MarkdownRenderer from '@/components/MarkdownRenderer'
 import ShortcutRenderer from '@/components/ShortcutRenderer'
 
 const SCROLL_OFFSET = 120
+const CONTENT_SCROLL_OFFSET = 220
+const CODE_BLOCK_EDGE_THRESHOLD = 4
+
+function isVisibleInContainer(element: HTMLElement, container: HTMLElement) {
+  const elementRect = element.getBoundingClientRect()
+  const containerRect = container.getBoundingClientRect()
+  return elementRect.bottom > containerRect.top && elementRect.top < containerRect.bottom
+}
+
+function canScroll(element: HTMLElement, direction: 'up' | 'down') {
+  if (element.scrollHeight <= element.clientHeight) return false
+  if (direction === 'up') return element.scrollTop > CODE_BLOCK_EDGE_THRESHOLD
+  return element.scrollTop + element.clientHeight < element.scrollHeight - CODE_BLOCK_EDGE_THRESHOLD
+}
+
+function findScrollableContent(container: HTMLElement, direction: 'up' | 'down') {
+  const codeBlocks = Array.from(
+    container.querySelectorAll<HTMLElement>('[data-code-scroll-container="true"]')
+  )
+  const orderedCodeBlocks = direction === 'down' ? codeBlocks : codeBlocks.reverse()
+
+  const visibleScrollableCodeBlock = orderedCodeBlocks.find(
+    (codeBlock) => isVisibleInContainer(codeBlock, container) && canScroll(codeBlock, direction)
+  )
+
+  if (visibleScrollableCodeBlock) return visibleScrollableCodeBlock
+  return canScroll(container, direction) ? container : null
+}
+
+function scrollInnerContent(container: HTMLElement | null, direction: 'up' | 'down') {
+  if (!container) return
+  const target = findScrollableContent(container, direction)
+  if (!target) return
+  const delta = direction === 'up' ? -CONTENT_SCROLL_OFFSET : CONTENT_SCROLL_OFFSET
+  target.scrollBy({ top: delta, behavior: 'smooth' })
+}
 
 export function AppContent() {
   const {
@@ -130,6 +166,19 @@ export function AppContent() {
     }
   }, [])
 
+  useEffect(() => {
+    window.api.onScrollContentUp(() => {
+      scrollInnerContent(containerRef.current, 'up')
+    })
+    window.api.onScrollContentDown(() => {
+      scrollInnerContent(containerRef.current, 'down')
+    })
+    return () => {
+      window.api.removeScrollContentUpListener()
+      window.api.removeScrollContentDownListener()
+    }
+  }, [])
+
   return (
     <div id="app-content" ref={containerRef} className="px-6 py-4">
       {/* Error Banner */}
@@ -194,7 +243,33 @@ export function AppContent() {
       )}
 
       {/* Solution Display */}
+      {solutionChunks.length > 0 && <ContentScrollShortcutHint />}
       <MarkdownRenderer>{solutionChunks.join('')}</MarkdownRenderer>
+    </div>
+  )
+}
+
+function ContentScrollShortcutHint() {
+  const { shortcuts } = useShortcutsStore()
+  const contentScrollUp = shortcuts.contentScrollUp
+  const contentScrollDown = shortcuts.contentScrollDown
+
+  if (!contentScrollUp || !contentScrollDown) return null
+
+  return (
+    <div className="mb-2 flex flex-wrap items-center gap-1.5 rounded-md border border-gray-600/60 bg-gray-800/70 px-2 py-1 text-[11px] text-gray-200 shadow-sm">
+      <span className="font-semibold">🤖 AI：</span>
+      <span>长代码/内容框可用</span>
+      <ShortcutRenderer
+        shortcut={contentScrollUp.key}
+        className="border border-gray-500 bg-gray-700 text-[10px] text-gray-50 hover:bg-gray-600"
+      />
+      <span>/</span>
+      <ShortcutRenderer
+        shortcut={contentScrollDown.key}
+        className="border border-gray-500 bg-gray-700 text-[10px] text-gray-50 hover:bg-gray-600"
+      />
+      <span>上下滚动</span>
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { toast } from 'sonner'
 import { useSettingsStore } from '@/lib/store/settings'
 import { useAppStore } from '@/lib/store/app'
 import { useTranscriptionStore } from '@/lib/store/transcription'
@@ -14,6 +15,20 @@ import { AppContent } from './AppContent'
 import { AppStatusBar } from './AppStatusBar'
 import { PrerequisitesChecker } from './PrerequisitesChecker'
 import { TranscriptionBar } from './TranscriptionBar'
+
+type ResponseMode = 'core-code' | 'acm' | 'custom'
+
+const responseModeNames: Record<ResponseMode, string> = {
+  'core-code': '核心代码模式',
+  acm: 'ACM 模式',
+  custom: '自定义提示词模式'
+}
+
+function getNextResponseMode(current: ResponseMode, hasCustomPrompt: boolean): ResponseMode {
+  const modes: ResponseMode[] = hasCustomPrompt ? ['core-code', 'acm', 'custom'] : ['core-code', 'acm']
+  const index = modes.indexOf(current)
+  return modes[(index + 1) % modes.length]
+}
 
 /** Pick the right device ID based on current audio source. */
 function getDeviceId(): string | undefined {
@@ -53,6 +68,27 @@ export default function CoderPage() {
       window.api.removeSyncAppStateListener()
     }
   }, [syncAppState])
+
+  useEffect(() => {
+    const handleToggleResponseMode = () => {
+      const { responseMode, customPrompt, updateSetting } = useSettingsStore.getState()
+      const hasCustomPrompt = Boolean(customPrompt.trim())
+      const nextMode = getNextResponseMode(responseMode, hasCustomPrompt)
+
+      updateSetting('responseMode', nextMode)
+      void window.api.updateAppSettings({ responseMode: nextMode })
+
+      const skippedCustomTip = !hasCustomPrompt && responseMode === 'acm'
+        ? '（未填写自定义提示词，已跳过自定义模式）'
+        : ''
+      toast.success(`已切换到${responseModeNames[nextMode]}${skippedCustomTip}`)
+    }
+
+    window.api.onToggleResponseMode(handleToggleResponseMode)
+    return () => {
+      window.api.removeToggleResponseModeListener()
+    }
+  }, [])
 
   useEffect(() => {
     const handleToggle = async () => {

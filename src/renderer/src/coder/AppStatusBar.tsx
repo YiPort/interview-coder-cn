@@ -5,6 +5,7 @@ import { useShortcutsStore } from '@/lib/store/shortcuts'
 import { useAppStore } from '@/lib/store/app'
 import { useVoiceStore } from '@/lib/store/voice'
 import { useRecorderStore } from '@/lib/store/recorder'
+import { useSettingsStore } from '@/lib/store/settings'
 import ShortcutRenderer from '@/components/ShortcutRenderer'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogTitle, DialogContent, DialogFooter } from '@/components/ui/dialog'
@@ -19,6 +20,7 @@ export function AppStatusBar() {
   } = useSolutionStore()
   const { ignoreMouse } = useAppStore()
   const { shortcuts } = useShortcutsStore()
+  const { responseMode, customPrompt } = useSettingsStore()
   const { isVoiceMode, isSpeaking } = useVoiceStore()
   const { isRecording, systemSentenceCount, micSentenceCount } = useRecorderStore()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -71,6 +73,13 @@ export function AppStatusBar() {
   // Check if there's an active conversation
   const hasActiveConversation = screenshotData && solutionChunks.length > 0
   const hasContent = solutionChunks.length > 0
+  const responseModeLabel = getResponseModeLabel(responseMode)
+  const responseModeTip =
+    responseMode === 'acm'
+      ? customPrompt.trim()
+        ? '再次切换可进入自定义提示词模式'
+        : '未填写自定义提示词，快捷键会跳过自定义模式'
+      : '切换核心代码 / ACM / 自定义提示词模式'
 
   return (
     <div className="absolute bottom-0 flex items-center justify-between w-full text-blue-100 bg-gray-600/10 px-4 pb-1">
@@ -117,6 +126,13 @@ export function AppStatusBar() {
             </span>
             <span>
               <ShortcutRenderer
+                shortcut={shortcuts.toggleResponseMode.key}
+                className="inline-block scale-75 text-xs border border-current bg-transparent py-0 px-1"
+              />
+              切换模式
+            </span>
+            <span>
+              <ShortcutRenderer
                 shortcut={shortcuts.codeIdea.key}
                 className="inline-block scale-75 text-xs border border-current bg-transparent py-0 px-1"
               />
@@ -133,6 +149,16 @@ export function AppStatusBar() {
         ) : null}
       </div>
       <div className="flex items-center space-x-4 select-none">
+        <div className="flex items-center text-xs" title={responseModeTip}>
+          <span className="mr-1 opacity-70">模式</span>
+          <span className="rounded border border-blue-100/40 bg-gray-700/50 px-1.5 py-0.5">
+            {responseModeLabel}
+          </span>
+          <ShortcutRenderer
+            shortcut={shortcuts.toggleResponseMode.key}
+            className="ml-1 inline-block scale-75 text-xs border border-current bg-transparent py-0 px-1"
+          />
+        </div>
         {/* Recording Indicator */}
         {isRecording && (
           <div className="flex items-center">
@@ -225,4 +251,13 @@ export function AppStatusBar() {
       </Dialog>
     </div>
   )
+}
+
+function getResponseModeLabel(mode: 'core-code' | 'acm' | 'custom') {
+  const labels = {
+    'core-code': '核心代码',
+    acm: 'ACM',
+    custom: '自定义'
+  }
+  return labels[mode]
 }

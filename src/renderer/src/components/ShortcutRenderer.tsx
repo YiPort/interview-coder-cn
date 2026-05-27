@@ -12,7 +12,7 @@ export default function ShortcutRenderer({
   return (
     <span
       className={cn(
-        'text-sm font-semibold rounded transition-colors bg-gray-200 hover:bg-gray-300 py-1 px-2 space-x-1',
+        'text-sm font-semibold rounded transition-colors bg-gray-200 text-gray-900 hover:bg-gray-300 py-1 px-2 space-x-1',
         className
       )}
     >
