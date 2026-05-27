@@ -31,7 +31,7 @@ function cleanCodeBlock(code: string): string {
     .split('\n')
     .map((line) => line.replace(/[ \t]+$/g, ''))
     .join('\n')
-    .replace(/\n{2,}/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
     .replace(/[ \t\n]+$/g, '')
 }
 
