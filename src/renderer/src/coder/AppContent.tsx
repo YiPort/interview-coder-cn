@@ -278,7 +278,7 @@ function ShortcutTip() {
   const { shortcuts } = useShortcutsStore()
   const { isVoiceMode } = useVoiceStore()
   return (
-    <div className="flex items-center justify-center h-full text-xl text-gray-400 select-none">
+    <div className="flex flex-col items-center justify-center gap-2 h-full text-xl text-gray-400 select-none">
       {isVoiceMode ? (
         <span>
           语音对话模式已开启，正在聆听...
@@ -289,14 +289,24 @@ function ShortcutTip() {
           结束语音输入并发送
         </span>
       ) : (
-        <span>
-          请按下快捷键
-          <ShortcutRenderer
-            shortcut={shortcuts.takeScreenshot.key}
-            className="mx-1 font-bold text-black"
-          />
-          抓取屏幕进行分析
-        </span>
+        <>
+          <span>
+            请按下快捷键
+            <ShortcutRenderer
+              shortcut={shortcuts.takeScreenshot.key}
+              className="mx-1 font-bold text-black"
+            />
+            抓取屏幕进行分析
+          </span>
+          <span className="text-base text-gray-500">
+            请按下
+            <ShortcutRenderer
+              shortcut={shortcuts.voiceQuery.key}
+              className="mx-1 font-bold text-black"
+            />
+            进行语音问答
+          </span>
+        </>
       )}
     </div>
   )
