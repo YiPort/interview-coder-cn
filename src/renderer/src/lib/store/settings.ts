@@ -33,6 +33,43 @@ interface Settings {
   visionModel: string
   responseMode: 'core-code' | 'acm' | 'custom'
   voiceWordLimit: number
+  statusBarShortcutHints: StatusBarShortcutHintAction[]
+}
+
+export type StatusBarShortcutHintAction =
+  | 'appendScreenshot'
+  | 'takeScreenshot'
+  | 'toggleResponseMode'
+  | 'codeIdea'
+  | 'alternativeSolution'
+  | 'voiceQuery'
+  | 'toggleTTS'
+  | 'startRecording'
+  | 'stopRecording'
+
+export const defaultStatusBarShortcutHints: StatusBarShortcutHintAction[] = [
+  'appendScreenshot',
+  'takeScreenshot',
+  'toggleResponseMode',
+  'codeIdea',
+  'alternativeSolution',
+  'voiceQuery',
+  'toggleTTS'
+]
+
+function normalizeApiBaseURL(url: string) {
+  return url.trim()
+}
+
+function normalizeSettings(settings: Partial<Settings>) {
+  const next = { ...settings }
+  if (typeof next.apiBaseURL === 'string') {
+    next.apiBaseURL = normalizeApiBaseURL(next.apiBaseURL)
+  }
+  if (typeof next.visionApiBaseURL === 'string') {
+    next.visionApiBaseURL = normalizeApiBaseURL(next.visionApiBaseURL)
+  }
+  return next
 }
 
 interface SettingsStore extends Settings {
@@ -70,7 +107,8 @@ const defaultSettings: Settings = {
   visionApiKey: '',
   visionModel: '',
   responseMode: 'core-code' as const,
-  voiceWordLimit: 500
+  voiceWordLimit: 500,
+  statusBarShortcutHints: defaultStatusBarShortcutHints
 }
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -78,10 +116,10 @@ export const useSettingsStore = create<SettingsStore>()(
     (set) => ({
       ...defaultSettings,
       updateSetting: (key, value) => {
-        set({ [key]: value })
+        set(normalizeSettings({ [key]: value } as Partial<Settings>))
       },
       syncSettings: (settings) => {
-        set(settings)
+        set(normalizeSettings(settings))
       }
     }),
     {

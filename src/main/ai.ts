@@ -437,12 +437,15 @@ async function testConnection(
       model: openai.chat(model),
       messages: [{ role: 'user', content: [{ type: 'text', text: 'hi' }] }]
     })
-    // Consume the stream to ensure connection succeeded
+    let text = ''
     for await (const chunk of result.textStream) {
-      void chunk
-      break
+      text += chunk
+      if (text.trim()) break
     }
     const latencyMs = Date.now() - start
+    if (!text.trim()) {
+      return { success: false, latencyMs, error: 'API 返回空内容，请检查 API Base URL 是否包含 /v1，以及模型是否可用' }
+    }
     return { success: true, latencyMs }
   } catch (err) {
     const latencyMs = Date.now() - start
@@ -515,6 +518,9 @@ async function testVisionCapability(
     const trimmed = text.trim()
     const expected = opts?.expectedText?.trim() || EXPECTED_TEST_TEXT
     const similarity = expected ? calcSimilarity(trimmed, expected) : undefined
+    if (!trimmed) {
+      return { success: false, latencyMs, similarity, extractedText: trimmed, error: '图片解析返回空内容，请检查 API Base URL 是否包含 /v1，并确认模型支持图片输入' }
+    }
     return { success: true, latencyMs, similarity, extractedText: trimmed }
   } catch (err) {
     const latencyMs = Date.now() - start
@@ -525,12 +531,17 @@ async function testVisionCapability(
 
 // ─── IPC Handlers ───────────────────────────────────────────────────
 
-ipcMain.handle('test-api-connection', async () => {
+function registerIpcHandler(channel: string, handler: Parameters<typeof ipcMain.handle>[1]) {
+  ipcMain.removeHandler(channel)
+  ipcMain.handle(channel, handler)
+}
+
+registerIpcHandler('test-api-connection', async () => {
   const model = getModel(settings)
   return testConnection(settings.apiBaseURL, settings.apiKey, model)
 })
 
-ipcMain.handle(
+registerIpcHandler(
   'test-vision-capability',
   async (_event, opts?: { imagePath?: string; expectedText?: string }) => {
     // If the main API doesn't support vision and no separate vision model is configured,
@@ -560,7 +571,7 @@ ipcMain.handle(
 )
 
 // Image file picker for custom vision test
-ipcMain.handle('select-image-file', async () => {
+registerIpcHandler('select-image-file', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],
     title: '选择测试图片',

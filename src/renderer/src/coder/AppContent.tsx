@@ -180,7 +180,7 @@ export function AppContent() {
   }, [])
 
   return (
-    <div id="app-content" ref={containerRef} className="px-6 py-4">
+    <div id="app-content" ref={containerRef} className="coder-content px-6 py-4">
       {/* Error Banner */}
       {errorMessage && (
         <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg flex items-start gap-3">
@@ -278,13 +278,13 @@ function ShortcutTip() {
   const { shortcuts } = useShortcutsStore()
   const { isVoiceMode } = useVoiceStore()
   return (
-    <div className="flex flex-col items-center justify-center gap-2 h-full text-xl text-gray-400 select-none">
+    <div className="flex min-h-full flex-col items-center justify-center gap-3 py-10 text-center text-xl font-medium text-white drop-shadow select-none">
       {isVoiceMode ? (
         <span>
           语音对话模式已开启，正在聆听...
           <ShortcutRenderer
             shortcut={shortcuts.voiceQuery.key}
-            className="mx-1 font-bold text-black"
+            className="mx-1 font-bold text-white border-white/70 bg-gray-900/80"
           />
           结束语音输入并发送
         </span>
@@ -294,15 +294,15 @@ function ShortcutTip() {
             请按下快捷键
             <ShortcutRenderer
               shortcut={shortcuts.takeScreenshot.key}
-              className="mx-1 font-bold text-black"
+              className="mx-1 font-bold text-white border-white/70 bg-gray-900/80"
             />
             抓取屏幕进行分析
           </span>
-          <span className="text-base text-gray-500">
+          <span className="text-base text-white/90">
             请按下
             <ShortcutRenderer
               shortcut={shortcuts.voiceQuery.key}
-              className="mx-1 font-bold text-black"
+              className="mx-1 font-bold text-white border-white/70 bg-gray-900/80"
             />
             进行语音问答
           </span>

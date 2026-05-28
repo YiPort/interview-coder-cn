@@ -712,7 +712,7 @@ const callbacks: Record<string, () => void> = {
 
   ignoreOrEnableMouse: () => {
     const mainWindow = global.mainWindow
-    if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage) return
+    if (!mainWindow || mainWindow.isDestroyed()) return
     state.ignoreMouse = !state.ignoreMouse
     mainWindow.setIgnoreMouseEvents(state.ignoreMouse)
     mainWindow.webContents.send('sync-app-state', state)
@@ -844,7 +844,12 @@ function getShortcutRegistrationKeys(key: string) {
 }
 
 function registerShortcut(action: string, key: string) {
-  if (shortcuts[action]) {
+  if (!callbacks[action]) return
+
+  const current = shortcuts[action]
+  if (current?.key === key && current.registeredKeys.length > 0) return
+
+  if (current) {
     unregisterShortcut(action)
   }
 

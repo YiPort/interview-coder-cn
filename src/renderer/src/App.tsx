@@ -41,11 +41,10 @@ export default function App() {
   }, [initialized, settingsStore])
 
   useEffect(() => {
-    console.log('App initShortcuts:', shortcuts) // DEBUG: 检查新键
     window.api.initShortcuts(shortcuts)
-    window.api.getShortcuts().then((shortcutsStatus) => {
-      console.log('Shortcuts registered:', shortcutsStatus) // DEBUG: 主进程状态
-    })
+    // Shortcuts edited in the settings page are pushed through updateShortcuts().
+    // Keep initialization one-shot; re-initializing all global shortcuts on every
+    // store change can unregister working shortcuts and leave the app non-interactive.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

@@ -1,11 +1,22 @@
 import { dialog, ipcMain } from 'electron'
 
+function normalizeApiBaseURL(url: string) {
+  return url.trim()
+}
+
 ipcMain.handle('getAppSettings', () => {
   return settings
 })
 
 ipcMain.handle('updateAppSettings', (_event, _settings) => {
-  Object.assign(settings, _settings)
+  const nextSettings = { ..._settings }
+  if (typeof nextSettings.apiBaseURL === 'string') {
+    nextSettings.apiBaseURL = normalizeApiBaseURL(nextSettings.apiBaseURL)
+  }
+  if (typeof nextSettings.visionApiBaseURL === 'string') {
+    nextSettings.visionApiBaseURL = normalizeApiBaseURL(nextSettings.visionApiBaseURL)
+  }
+  Object.assign(settings, nextSettings)
 })
 
 ipcMain.handle('selectScreenshotDir', async () => {
@@ -31,7 +42,7 @@ ipcMain.handle('selectRecordDir', async () => {
 })
 
 export const settings = {
-  apiBaseURL: process.env.API_BASE_URL || '',
+  apiBaseURL: normalizeApiBaseURL(process.env.API_BASE_URL || ''),
   apiKey: process.env.API_KEY || '',
   model: process.env.MODEL || '',
   codeLanguage: process.env.CODE_LANGUAGE || 'typescript',
@@ -53,7 +64,26 @@ export const settings = {
   visionApiKey: '',
   visionModel: '',
   responseMode: 'core-code' as 'core-code' | 'acm' | 'custom',
-  voiceWordLimit: 500
+  voiceWordLimit: 500,
+  statusBarShortcutHints: [
+    'appendScreenshot',
+    'takeScreenshot',
+    'toggleResponseMode',
+    'codeIdea',
+    'alternativeSolution',
+    'voiceQuery',
+    'toggleTTS'
+  ] as Array<
+    | 'appendScreenshot'
+    | 'takeScreenshot'
+    | 'toggleResponseMode'
+    | 'codeIdea'
+    | 'alternativeSolution'
+    | 'voiceQuery'
+    | 'toggleTTS'
+    | 'startRecording'
+    | 'stopRecording'
+  >
 }
 
 export type AppSettings = typeof settings

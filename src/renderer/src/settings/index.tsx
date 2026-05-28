@@ -22,7 +22,12 @@ import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
-import { useSettingsStore } from '@/lib/store/settings'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  defaultStatusBarShortcutHints,
+  useSettingsStore,
+  type StatusBarShortcutHintAction
+} from '@/lib/store/settings'
 import { useShortcutsStore } from '@/lib/store/shortcuts'
 import { useRecorderStore } from '@/lib/store/recorder'
 import { useResumeStore } from '@/lib/store/resume'
@@ -31,6 +36,22 @@ import ShortcutRenderer from '@/components/ShortcutRenderer'
 import { SelectModel } from './SelectModel'
 import { SelectLanguage } from './SelectLanguage'
 import { CustomShortcuts, ResetDefaultShortcuts } from './CustomShortcuts'
+
+const statusBarShortcutHintOptions: Array<{
+  action: StatusBarShortcutHintAction
+  label: string
+  description: string
+}> = [
+  { action: 'appendScreenshot', label: '追加截图', description: '在当前对话中追加题目截图' },
+  { action: 'takeScreenshot', label: '新开对话', description: '截图并重新开始一轮解题' },
+  { action: 'toggleResponseMode', label: '切换模式', description: '核心代码 / ACM / 自定义模式' },
+  { action: 'codeIdea', label: '解题思路', description: '输出适合口述的代码思路' },
+  { action: 'alternativeSolution', label: '换个解法', description: '请求另一种解法' },
+  { action: 'voiceQuery', label: '语音对话', description: '无需截图直接语音问 AI' },
+  { action: 'toggleTTS', label: '朗读开关', description: '开启或关闭答案朗读' },
+  { action: 'startRecording', label: '开始录制', description: '显示开始录音快捷键提示' },
+  { action: 'stopRecording', label: '停止录制', description: '显示停止录音快捷键提示' }
+]
 
 export default function SettingsPage() {
   const {
@@ -58,6 +79,7 @@ export default function SettingsPage() {
     visionModel,
     responseMode,
     voiceWordLimit,
+    statusBarShortcutHints,
     updateSetting
   } = useSettingsStore()
   const { shortcuts } = useShortcutsStore()
@@ -91,6 +113,9 @@ export default function SettingsPage() {
   } = useResumeStore()
   const startRecKey = shortcuts.startRecording?.key || 'Ctrl+1'
   const stopRecKey = shortcuts.stopRecording?.key || 'Ctrl+2'
+  const selectedStatusBarShortcutHints = Array.isArray(statusBarShortcutHints)
+    ? statusBarShortcutHints
+    : defaultStatusBarShortcutHints
   const [showApiKey, setShowApiKey] = useState(false)
   const [showDashscopeApiKey, setShowDashscopeApiKey] = useState(false)
   const [showVisionApiKey, setShowVisionApiKey] = useState(false)
@@ -133,6 +158,19 @@ export default function SettingsPage() {
   const handleSelectCustomImage = async () => {
     const filePath = await window.api.selectImageFile()
     if (filePath) setCustomImagePath(filePath)
+  }
+
+  const handleStatusBarShortcutHintChange = (
+    action: StatusBarShortcutHintAction,
+    checked: boolean
+  ) => {
+    const next = checked
+      ? [...selectedStatusBarShortcutHints, action]
+      : selectedStatusBarShortcutHints.filter((item) => item !== action)
+    const ordered = statusBarShortcutHintOptions
+      .map((option) => option.action)
+      .filter((item) => next.includes(item))
+    updateSetting('statusBarShortcutHints', ordered)
   }
 
   useEffect(() => {
@@ -1220,6 +1258,46 @@ export default function SettingsPage() {
                   }}
                 />
                 <span className="text-xs whitespace-nowrap">不透明</span>
+              </div>
+            </div>
+
+            <div className="flex items-start justify-between pt-4 border-t border-gray-400/30">
+              <label className="text-sm font-medium pt-1">
+                底部快捷键提示
+                <span className="ml-2 text-xs font-light block mt-0.5">
+                  选择主界面底部要展示的快捷键，减少提示占用空间
+                </span>
+              </label>
+              <div className="w-80 grid grid-cols-2 gap-2">
+                {statusBarShortcutHintOptions.map((option) => {
+                  const checked = selectedStatusBarShortcutHints.includes(option.action)
+                  const shortcut = shortcuts[option.action]
+
+                  return (
+                    <label
+                      key={option.action}
+                      className="flex cursor-pointer items-start gap-2 rounded-md border border-gray-300 bg-white/80 p-2 text-xs hover:border-gray-400"
+                      title={option.description}
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(value) =>
+                          handleStatusBarShortcutHintChange(option.action, value === true)
+                        }
+                        className="mt-0.5"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-medium text-gray-800">{option.label}</span>
+                        {shortcut && (
+                          <ShortcutRenderer
+                            shortcut={shortcut.key}
+                            className="mt-1 inline-flex scale-90 border border-gray-400 bg-gray-100 py-0 px-1 text-[10px]"
+                          />
+                        )}
+                      </span>
+                    </label>
+                  )
+                })}
               </div>
             </div>
           </div>

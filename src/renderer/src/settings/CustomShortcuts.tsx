@@ -23,7 +23,7 @@ export function CustomShortcuts() {
     (action: string, key: string) => {
       const newShortcut = { ...shortcuts[action], key }
       updateShortcut(action, newShortcut)
-      window.api.updateShortcuts([newShortcut])
+      void window.api.updateShortcuts([newShortcut])
     },
     [shortcuts, updateShortcut]
   )

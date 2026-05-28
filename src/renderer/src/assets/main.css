@@ -21,6 +21,10 @@
   @apply h-[calc(100vh-36px)] overflow-y-auto bg-gray-500;
 }
 
+#app-content.coder-content {
+  @apply h-auto min-h-0 flex-1 overflow-y-auto;
+}
+
 .transcription-scroll {
   overflow: auto;
   scrollbar-gutter: stable;

@@ -30,13 +30,6 @@ function getNextResponseMode(current: ResponseMode, hasCustomPrompt: boolean): R
   return modes[(index + 1) % modes.length]
 }
 
-/** Pick the right device ID based on current audio source. */
-function getDeviceId(): string | undefined {
-  const { audioSource, systemAudioDeviceId, micDeviceId } = useSettingsStore.getState()
-  const id = audioSource === 'system' ? systemAudioDeviceId : micDeviceId
-  return id || undefined
-}
-
 export default function CoderPage() {
   const { opacity, dashscopeApiKey, audioSource, systemAudioDeviceId, micDeviceId } =
     useSettingsStore()
@@ -180,14 +173,16 @@ export default function CoderPage() {
           await window.api.sendVoiceQuery(text.trim())
         }
       } else {
-        // Start voice mode: start audio capture, start transcription
-        const { dashscopeApiKey: apiKey } = useSettingsStore.getState()
+        // Start voice mode: use microphone for voice conversation.
+        // System audio capture shows a screen-share prompt and is meant for transcribing
+        // interview audio, not for the user's voice question.
+        const { dashscopeApiKey: apiKey, micDeviceId } = useSettingsStore.getState()
         if (!apiKey) {
           setErrorMessage('请先在设置中配置百炼平台 API Key')
           return
         }
         try {
-          await startAudioCapture(getDeviceId())
+          await startAudioCapture(micDeviceId || undefined)
           await window.api.startTranscription(apiKey)
           setVoiceMode(true)
           useTranscriptionStore.getState().setIsTranscribing(true)
@@ -308,7 +303,7 @@ export default function CoderPage() {
   }, [])
 
   return (
-    <div className="relative h-screen">
+    <div className="relative flex h-screen flex-col overflow-hidden">
       <AppHeader />
       <AppContent />
       <TranscriptionBar />
