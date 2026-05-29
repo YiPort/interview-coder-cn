@@ -1245,77 +1245,6 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        {/* Appearance Settings */}
-        <div className="bg-gray-300/80 rounded-lg p-6">
-          <h2 className="text-lg font-semibold mb-4 flex items-center">
-            <Palette className="h-5 w-5 mr-2" />
-            外观设置
-          </h2>
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">
-                窗口透明度
-                <span className="ml-2 text-xs font-light">拖动可实时预览效果</span>
-              </label>
-              <div className="w-60 flex items-center gap-2">
-                <span className="text-xs whitespace-nowrap">透明</span>
-                <Slider
-                  min={0.1}
-                  max={1}
-                  step={0.05}
-                  value={[opacity]}
-                  onValueChange={(value) => {
-                    updateSetting('opacity', value[0])
-                    document.body.style.opacity = value[0].toString()
-                  }}
-                />
-                <span className="text-xs whitespace-nowrap">不透明</span>
-              </div>
-            </div>
-
-            <div className="flex items-start justify-between pt-4 border-t border-gray-400/30">
-              <label className="text-sm font-medium pt-1">
-                底部快捷键提示
-                <span className="ml-2 text-xs font-light block mt-0.5">
-                  选择主界面底部要展示的快捷键，减少提示占用空间
-                </span>
-              </label>
-              <div className="w-80 grid grid-cols-2 gap-2">
-                {statusBarShortcutHintOptions.map((option) => {
-                  const checked = selectedStatusBarShortcutHints.includes(option.action)
-                  const shortcut = shortcuts[option.action]
-
-                  return (
-                    <label
-                      key={option.action}
-                      className="flex cursor-pointer items-start gap-2 rounded-md border border-gray-300 bg-white/80 p-2 text-xs hover:border-gray-400"
-                      title={option.description}
-                    >
-                      <Checkbox
-                        checked={checked}
-                        onCheckedChange={(value) =>
-                          handleStatusBarShortcutHintChange(option.action, value === true)
-                        }
-                        className="mt-0.5"
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block font-medium text-gray-800">{option.label}</span>
-                        {shortcut && (
-                          <ShortcutRenderer
-                            shortcut={shortcut.key}
-                            className="mt-1 inline-flex scale-90 border border-gray-400 bg-gray-100 py-0 px-1 text-[10px]"
-                          />
-                        )}
-                      </span>
-                    </label>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Shortcuts Settings */}
         <div className="bg-gray-300/80 rounded-lg p-6">
           <h2 className="text-lg font-semibold mb-4 flex items-center">
@@ -1492,6 +1421,77 @@ export default function SettingsPage() {
                 >
                   {isRecording ? '停止录音' : '测试录音'}
                 </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Appearance Settings */}
+        <div className="bg-gray-300/80 rounded-lg p-6">
+          <h2 className="text-lg font-semibold mb-4 flex items-center">
+            <Palette className="h-5 w-5 mr-2" />
+            外观设置
+          </h2>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">
+                窗口透明度
+                <span className="ml-2 text-xs font-light">拖动可实时预览效果</span>
+              </label>
+              <div className="w-60 flex items-center gap-2">
+                <span className="text-xs whitespace-nowrap">透明</span>
+                <Slider
+                  min={0.1}
+                  max={1}
+                  step={0.05}
+                  value={[opacity]}
+                  onValueChange={(value) => {
+                    updateSetting('opacity', value[0])
+                    document.body.style.opacity = value[0].toString()
+                  }}
+                />
+                <span className="text-xs whitespace-nowrap">不透明</span>
+              </div>
+            </div>
+
+            <div className="flex items-start justify-between pt-4 border-t border-gray-400/30">
+              <label className="text-sm font-medium pt-1">
+                底部快捷键提示
+                <span className="ml-2 text-xs font-light block mt-0.5">
+                  选择主界面底部要展示的快捷键，减少提示占用空间
+                </span>
+              </label>
+              <div className="w-80 grid grid-cols-2 gap-2">
+                {statusBarShortcutHintOptions.map((option) => {
+                  const checked = selectedStatusBarShortcutHints.includes(option.action)
+                  const shortcut = shortcuts[option.action]
+
+                  return (
+                    <label
+                      key={option.action}
+                      className="flex cursor-pointer items-start gap-2 rounded-md border border-gray-300 bg-white/80 p-2 text-xs hover:border-gray-400"
+                      title={option.description}
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(value) =>
+                          handleStatusBarShortcutHintChange(option.action, value === true)
+                        }
+                        className="mt-0.5"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-medium text-gray-800">{option.label}</span>
+                        {shortcut && (
+                          <ShortcutRenderer
+                            shortcut={shortcut.key}
+                            className="mt-1 inline-flex scale-90 border border-gray-400 bg-gray-100 py-0 px-1 text-[10px]"
+                          />
+                        )}
+                      </span>
+                    </label>
+                  )
+                })}
               </div>
             </div>
           </div>
