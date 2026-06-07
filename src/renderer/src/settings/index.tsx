@@ -84,6 +84,7 @@ export default function SettingsPage() {
     screenshotAutoSave,
     screenshotDir,
     dashscopeApiKey,
+    transcriptionModel,
     ttsProvider,
     ttsEnabled,
     audioSource,
@@ -943,6 +944,22 @@ export default function SettingsPage() {
                   )}
                 </Button>
               </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">
+                转录模型
+                <span className="ml-2 text-xs font-light">
+                  留空则使用系统预设模型 fun-asr-realtime
+                </span>
+              </label>
+              <input
+                type="text"
+                value={transcriptionModel}
+                onChange={(e) => updateSetting('transcriptionModel', e.target.value)}
+                className="w-60 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="fun-asr-realtime"
+              />
             </div>
 
             <div className="flex items-start justify-between">

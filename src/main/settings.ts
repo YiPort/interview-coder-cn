@@ -4,6 +4,12 @@ function normalizeApiBaseURL(url: string) {
   return url.trim()
 }
 
+export const DEFAULT_TRANSCRIPTION_MODEL = 'fun-asr-realtime'
+
+export function getTranscriptionModel() {
+  return settings.transcriptionModel?.trim() || DEFAULT_TRANSCRIPTION_MODEL
+}
+
 ipcMain.handle('getAppSettings', () => {
   return settings
 })
@@ -51,6 +57,7 @@ export const settings = {
   screenshotAutoSave: false,
   screenshotDir: '',
   dashscopeApiKey: '',
+  transcriptionModel: '',
   ttsProvider: 'web-speech' as 'web-speech' | 'dashscope',
   ttsEnabled: false,
   audioSource: 'system' as 'system' | 'microphone',

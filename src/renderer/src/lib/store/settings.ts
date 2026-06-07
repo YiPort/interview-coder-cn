@@ -26,6 +26,7 @@ interface Settings {
   screenshotDir: string
 
   dashscopeApiKey: string
+  transcriptionModel: string
 
   ttsProvider: 'web-speech' | 'dashscope'
   ttsEnabled: boolean
@@ -121,6 +122,7 @@ const defaultSettings: Settings = {
   screenshotDir: '',
 
   dashscopeApiKey: '',
+  transcriptionModel: '',
 
   ttsProvider: 'web-speech' as const,
   ttsEnabled: false,

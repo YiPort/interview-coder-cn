@@ -3,7 +3,7 @@ import WebSocket from 'ws'
 import { randomUUID } from 'node:crypto'
 import { writeFile, appendFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { settings } from './settings'
+import { settings, getTranscriptionModel } from './settings'
 
 const WS_URL = 'wss://dashscope.aliyuncs.com/api-ws/v1/inference/'
 
@@ -75,7 +75,7 @@ function createRecordingWebSocket(apiKey: string, channel: 'system' | 'mic'): We
         task_group: 'audio',
         task: 'asr',
         function: 'recognition',
-        model: 'fun-asr-realtime',
+        model: getTranscriptionModel(),
         parameters: {
           format: 'pcm',
           sample_rate: 16000
