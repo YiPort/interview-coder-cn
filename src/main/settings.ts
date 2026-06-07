@@ -65,6 +65,7 @@ export const settings = {
   visionModel: '',
   responseMode: 'core-code' as 'core-code' | 'acm' | 'custom',
   voiceWordLimit: 500,
+  aiAnswerFontSize: 12,
   statusBarShortcutHints: [
     'appendScreenshot',
     'takeScreenshot',
@@ -88,6 +89,9 @@ export const settings = {
     | 'pageDown'
     | 'contentScrollUp'
     | 'contentScrollDown'
+    | 'resetAnswerFontSize'
+    | 'decreaseAnswerFontSize'
+    | 'increaseAnswerFontSize'
     | 'moveMainWindowUp'
     | 'moveMainWindowDown'
     | 'moveMainWindowLeft'

@@ -98,6 +98,21 @@ const defaultShortcuts: Record<string, Omit<Shortcut, 'defaultKey'>> = {
     key: 'CommandOrControl+Shift+K',
     category: 'Navigation'
   },
+  resetAnswerFontSize: {
+    action: 'resetAnswerFontSize',
+    key: 'CommandOrControl+0',
+    category: 'Appearance'
+  },
+  decreaseAnswerFontSize: {
+    action: 'decreaseAnswerFontSize',
+    key: 'CommandOrControl+-',
+    category: 'Appearance'
+  },
+  increaseAnswerFontSize: {
+    action: 'increaseAnswerFontSize',
+    key: 'CommandOrControl+=',
+    category: 'Appearance'
+  },
   moveMainWindowUp: {
     action: 'moveMainWindowUp',
     key: 'CommandOrControl+Up',
@@ -173,7 +188,7 @@ export const useShortcutsStore = create<ShortcutsStore>()(
     }),
     {
       name: 'interview-coder-shortcuts',
-      version: 10,
+      version: 11,
       migrate: (state: unknown, version: number) => {
         if (!isPersistedShortcutsState(state) || !state.shortcuts) return state as ShortcutsStore
         // Merge in any new default shortcuts that are missing

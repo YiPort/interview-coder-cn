@@ -24,6 +24,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
+  AI_ANSWER_FONT_SIZE_DEFAULT,
+  AI_ANSWER_FONT_SIZE_MAX,
+  AI_ANSWER_FONT_SIZE_MIN,
   defaultStatusBarShortcutHints,
   useSettingsStore,
   type StatusBarShortcutHintAction
@@ -56,6 +59,9 @@ const statusBarShortcutHintOptions: Array<{
   { action: 'pageDown', label: '向下翻页', description: '主内容区域向下翻页' },
   { action: 'contentScrollUp', label: '内容上滚', description: '滚动当前代码块或内容框' },
   { action: 'contentScrollDown', label: '内容下滚', description: '滚动当前代码块或内容框' },
+  { action: 'resetAnswerFontSize', label: '字号默认', description: '恢复 AI 回答默认字号' },
+  { action: 'decreaseAnswerFontSize', label: '字号缩小', description: '缩小 AI 回答字号' },
+  { action: 'increaseAnswerFontSize', label: '字号放大', description: '放大 AI 回答字号' },
   { action: 'moveMainWindowUp', label: '上移窗口', description: '向上移动主窗口' },
   { action: 'moveMainWindowDown', label: '下移窗口', description: '向下移动主窗口' },
   { action: 'moveMainWindowLeft', label: '左移窗口', description: '向左移动主窗口' },
@@ -92,6 +98,7 @@ export default function SettingsPage() {
     visionModel,
     responseMode,
     voiceWordLimit,
+    aiAnswerFontSize,
     statusBarShortcutHints,
     updateSetting
   } = useSettingsStore()
@@ -1453,6 +1460,37 @@ export default function SettingsPage() {
                 />
                 <span className="text-xs whitespace-nowrap">不透明</span>
               </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-gray-400/30">
+              <label className="text-sm font-medium">
+                AI 回答字号
+                <span className="ml-2 text-xs font-light">
+                  调整主界面 AI 答案文字大小，默认 {AI_ANSWER_FONT_SIZE_DEFAULT}px
+                </span>
+              </label>
+              <div className="w-60 flex items-center gap-2">
+                <span className="text-xs whitespace-nowrap">{AI_ANSWER_FONT_SIZE_MIN}px</span>
+                <Slider
+                  min={AI_ANSWER_FONT_SIZE_MIN}
+                  max={AI_ANSWER_FONT_SIZE_MAX}
+                  step={1}
+                  value={[aiAnswerFontSize]}
+                  onValueChange={(value) => updateSetting('aiAnswerFontSize', value[0])}
+                />
+                <span className="text-xs whitespace-nowrap">{AI_ANSWER_FONT_SIZE_MAX}px</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => updateSetting('aiAnswerFontSize', AI_ANSWER_FONT_SIZE_DEFAULT)}
+                >
+                  默认
+                </Button>
+              </div>
+              <span className="ml-3 w-10 text-right text-xs text-gray-600">
+                {aiAnswerFontSize}px
+              </span>
             </div>
 
             <div className="flex items-start justify-between pt-4 border-t border-gray-400/30">

@@ -2,6 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useShortcutsStore } from '@/lib/store/shortcuts'
 import { useSolutionStore } from '@/lib/store/solution'
 import { useVoiceStore } from '@/lib/store/voice'
+import {
+  AI_ANSWER_FONT_SIZE_DEFAULT,
+  clampAiAnswerFontSize,
+  useSettingsStore
+} from '@/lib/store/settings'
 import MarkdownRenderer from '@/components/MarkdownRenderer'
 import ShortcutRenderer from '@/components/ShortcutRenderer'
 
@@ -56,6 +61,7 @@ export function AppContent() {
     clearSolution
   } = useSolutionStore()
 
+  const { aiAnswerFontSize } = useSettingsStore()
   const [recentScreenshots, setRecentScreenshots] = useState<string[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -179,6 +185,25 @@ export function AppContent() {
     }
   }, [])
 
+  useEffect(() => {
+    window.api.onIncreaseAnswerFontSize(() => {
+      const { aiAnswerFontSize: current, updateSetting } = useSettingsStore.getState()
+      updateSetting('aiAnswerFontSize', clampAiAnswerFontSize(current + 1))
+    })
+    window.api.onDecreaseAnswerFontSize(() => {
+      const { aiAnswerFontSize: current, updateSetting } = useSettingsStore.getState()
+      updateSetting('aiAnswerFontSize', clampAiAnswerFontSize(current - 1))
+    })
+    window.api.onResetAnswerFontSize(() => {
+      useSettingsStore.getState().updateSetting('aiAnswerFontSize', AI_ANSWER_FONT_SIZE_DEFAULT)
+    })
+    return () => {
+      window.api.removeIncreaseAnswerFontSizeListener()
+      window.api.removeDecreaseAnswerFontSizeListener()
+      window.api.removeResetAnswerFontSizeListener()
+    }
+  }, [])
+
   return (
     <div id="app-content" ref={containerRef} className="coder-content px-6 py-4">
       {/* Error Banner */}
@@ -244,7 +269,7 @@ export function AppContent() {
 
       {/* Solution Display */}
       {solutionChunks.length > 0 && <ContentScrollShortcutHint />}
-      <MarkdownRenderer>{solutionChunks.join('')}</MarkdownRenderer>
+      <MarkdownRenderer fontSize={aiAnswerFontSize}>{solutionChunks.join('')}</MarkdownRenderer>
     </div>
   )
 }

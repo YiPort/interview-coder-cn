@@ -741,6 +741,24 @@ const callbacks: Record<string, () => void> = {
     mainWindow.webContents.send('scroll-content-down')
   },
 
+  increaseAnswerFontSize: () => {
+    const mainWindow = global.mainWindow
+    if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage) return
+    mainWindow.webContents.send('increase-answer-font-size')
+  },
+
+  decreaseAnswerFontSize: () => {
+    const mainWindow = global.mainWindow
+    if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage) return
+    mainWindow.webContents.send('decrease-answer-font-size')
+  },
+
+  resetAnswerFontSize: () => {
+    const mainWindow = global.mainWindow
+    if (!mainWindow || mainWindow.isDestroyed() || !state.inCoderPage) return
+    mainWindow.webContents.send('reset-answer-font-size')
+  },
+
   moveMainWindowUp: () => {
     const mainWindow = global.mainWindow
     if (!mainWindow || mainWindow.isDestroyed()) return

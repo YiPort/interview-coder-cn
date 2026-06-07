@@ -1,6 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+export const AI_ANSWER_FONT_SIZE_DEFAULT = 12
+export const AI_ANSWER_FONT_SIZE_MIN = 10
+export const AI_ANSWER_FONT_SIZE_MAX = 20
+
+export function clampAiAnswerFontSize(value: number) {
+  if (!Number.isFinite(value)) return AI_ANSWER_FONT_SIZE_DEFAULT
+  return Math.min(AI_ANSWER_FONT_SIZE_MAX, Math.max(AI_ANSWER_FONT_SIZE_MIN, Math.round(value)))
+}
+
 interface Settings {
   // theme: 'light' | 'dark'an
   apiBaseURL: string
@@ -33,6 +42,7 @@ interface Settings {
   visionModel: string
   responseMode: 'core-code' | 'acm' | 'custom'
   voiceWordLimit: number
+  aiAnswerFontSize: number
   statusBarShortcutHints: StatusBarShortcutHintAction[]
 }
 
@@ -51,6 +61,9 @@ export type StatusBarShortcutHintAction =
   | 'pageDown'
   | 'contentScrollUp'
   | 'contentScrollDown'
+  | 'resetAnswerFontSize'
+  | 'decreaseAnswerFontSize'
+  | 'increaseAnswerFontSize'
   | 'moveMainWindowUp'
   | 'moveMainWindowDown'
   | 'moveMainWindowLeft'
@@ -81,6 +94,9 @@ function normalizeSettings(settings: Partial<Settings>) {
   }
   if (typeof next.visionApiBaseURL === 'string') {
     next.visionApiBaseURL = normalizeApiBaseURL(next.visionApiBaseURL)
+  }
+  if (typeof next.aiAnswerFontSize === 'number') {
+    next.aiAnswerFontSize = clampAiAnswerFontSize(next.aiAnswerFontSize)
   }
   return next
 }
@@ -121,6 +137,7 @@ const defaultSettings: Settings = {
   visionModel: '',
   responseMode: 'core-code' as const,
   voiceWordLimit: 500,
+  aiAnswerFontSize: AI_ANSWER_FONT_SIZE_DEFAULT,
   statusBarShortcutHints: defaultStatusBarShortcutHints
 }
 

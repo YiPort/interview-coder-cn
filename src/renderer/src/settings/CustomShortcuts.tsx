@@ -179,6 +179,26 @@ export function CustomShortcuts() {
           />
         </div>
 
+        {/* Appearance */}
+        <div className="space-y-2">
+          <h3 className="text-sm text-gray-500">外观</h3>
+          <Shortcut
+            label="放大 AI 回答字号"
+            description="按 1px 放大主界面 AI 答案文字"
+            shortcut="increaseAnswerFontSize"
+          />
+          <Shortcut
+            label="缩小 AI 回答字号"
+            description="按 1px 缩小主界面 AI 答案文字"
+            shortcut="decreaseAnswerFontSize"
+          />
+          <Shortcut
+            label="恢复默认 AI 回答字号"
+            description="恢复到默认答案字号"
+            shortcut="resetAnswerFontSize"
+          />
+        </div>
+
         {/* Window Movement */}
         <div className="space-y-2">
           <h3 className="text-sm text-gray-500">窗口移动</h3>

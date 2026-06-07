@@ -243,6 +243,24 @@ const api = {
   removeToggleResponseModeListener: () => {
     ipcRenderer.removeAllListeners('toggle-response-mode')
   },
+  onIncreaseAnswerFontSize: (callback: () => void) => {
+    ipcRenderer.on('increase-answer-font-size', callback)
+  },
+  removeIncreaseAnswerFontSizeListener: () => {
+    ipcRenderer.removeAllListeners('increase-answer-font-size')
+  },
+  onDecreaseAnswerFontSize: (callback: () => void) => {
+    ipcRenderer.on('decrease-answer-font-size', callback)
+  },
+  removeDecreaseAnswerFontSizeListener: () => {
+    ipcRenderer.removeAllListeners('decrease-answer-font-size')
+  },
+  onResetAnswerFontSize: (callback: () => void) => {
+    ipcRenderer.on('reset-answer-font-size', callback)
+  },
+  removeResetAnswerFontSizeListener: () => {
+    ipcRenderer.removeAllListeners('reset-answer-font-size')
+  },
 
   // TTS speak text (clean AI response only, no user messages)
   onTtsSpeakText: (callback: (text: string) => void) => {

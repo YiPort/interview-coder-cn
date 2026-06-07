@@ -1,5 +1,5 @@
 import type { Components } from 'react-markdown'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import hljs from 'highlight.js/lib/common'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -82,7 +82,7 @@ const components: Components = {
             {language}
           </span>
         )}
-        <div className="flex text-[11px] leading-4">
+        <div className="flex leading-4 text-[length:var(--ai-code-font-size)]">
           <span
             className="shrink-0 select-none text-right text-gray-500 border-r border-gray-700 py-2 pr-3 pl-4 bg-[#0d1117]"
             style={{ minWidth: `${digits + 2}ch` }}
@@ -106,9 +106,25 @@ const components: Components = {
   }
 }
 
-export default function MarkdownRenderer({ children }: { children: string }) {
+export default function MarkdownRenderer({
+  children,
+  fontSize
+}: {
+  children: string
+  fontSize: number
+}) {
+  const codeFontSize = Math.max(10, fontSize - 1)
+
   return (
-    <div className="prose prose-sm prose-invert max-w-none text-xs leading-snug prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-1 prose-blockquote:my-1 prose-pre:my-1 prose-pre:p-0 prose-code:text-xs">
+    <div
+      className="prose prose-invert max-w-none leading-snug prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-headings:my-1 prose-blockquote:my-1 prose-pre:my-1 prose-pre:p-0"
+      style={
+        {
+          fontSize: `${fontSize}px`,
+          '--ai-code-font-size': `${codeFontSize}px`
+        } as CSSProperties
+      }
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight]}
